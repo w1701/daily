@@ -254,7 +254,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 </nav>
 <!-- SYNC STATUS BAR -->
-<div id="sync-bar" style="font-size:11px;color:var(--text3);text-align:center;padding:4px 8px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;min-height:24px">
+<div id="sync-bar" style="font-size:13px;color:var(--text);text-align:center;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;min-height:36px;flex-wrap:wrap">
   <span id="sync-status-bar-text">Loading saved data…</span>
 </div>
 <!-- OVERVIEW -->
@@ -1529,34 +1529,39 @@ function forcePull(){
 }
 
 async function forcePullFromCloud(){
-  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');return;}
-  setSyncStatus('☁️ Force loading from cloud…');
+  if(!syncApiKey||!syncBinId){setSyncStatus('No API key or Bin ID — open Sync settings');return;}
+  setSyncStatus('Step 1: contacting JSONBin…');
+  let res,data;
   try{
-    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
+    res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
       headers:{'X-Master-Key':syncApiKey}
     });
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    // Show what we got for debugging
-    const topKeys=Object.keys(data).join(', ');
-    const record=data.record;
-    const recordKeys=record?Object.keys(record).join(', '):'(none)';
-    setSyncStatus('Got: {'+topKeys+'} record: {'+recordKeys+'}');
-    // Try every possible location the data might be
-    let state=null;
-    if(record&&typeof record==='object'&&!Array.isArray(record)){state=record;}
-    else if(data&&typeof data==='object'&&!Array.isArray(data)&&(data.savedLogs||data.planState||data.stageTasks)){state=data;}
-    if(!state){
-      // Last resort — show raw so user can see what's there
-      setSyncStatus('⚠️ Raw: '+JSON.stringify(data).slice(0,120));
-      return;
-    }
-    applyAppState(state);
-    state.v=state.v||SYNC_VERSION;
-    saveLocal(state);
-    rebuildAll();
-    setSyncStatus('☁️ Force loaded from cloud ✓',3000);
-  }catch(e){setSyncStatus('⚠️ Pull failed: '+e.message);}
+  }catch(e){
+    setSyncStatus('⚠️ Network error: '+e.message+' — check your connection');
+    return;
+  }
+  setSyncStatus('Step 2: response '+res.status+(res.ok?' OK':' ERROR'));
+  if(!res.ok){setSyncStatus('⚠️ Server error '+res.status+' — check API key and Bin ID');return;}
+  try{data=await res.json();}
+  catch(e){setSyncStatus('⚠️ Bad JSON from server: '+e.message);return;}
+  setSyncStatus('Step 3: got keys: '+Object.keys(data).join(', '));
+  await new Promise(r=>setTimeout(r,2000));// pause so user can read step 3
+  const record=data.record;
+  setSyncStatus('Step 4: record keys: '+(record?Object.keys(record).join(', '):'(empty)'));
+  await new Promise(r=>setTimeout(r,2000));
+  let state=null;
+  if(record&&typeof record==='object'&&!Array.isArray(record)){state=record;}
+  else if(data&&typeof data==='object'&&(data.savedLogs||data.planState||data.stageTasks||data.dotState)){state=data;}
+  if(!state){
+    setSyncStatus('⚠️ No app data in cloud. Keys found: '+JSON.stringify(data).slice(0,100));
+    return;
+  }
+  setSyncStatus('Step 5: applying state…');
+  applyAppState(state);
+  state.v=state.v||SYNC_VERSION;
+  saveLocal(state);
+  rebuildAll();
+  setSyncStatus('✅ Loaded from cloud!',5000);
 }
 
 // Patch all save points to call autoSave
