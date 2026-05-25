@@ -1482,7 +1482,7 @@ async function gdrivePull(){
 function scheduleCloudPush(){
   if(!_gdriveReady)return;
   clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(()=>gdrivePush(),4000);
+  _pushTimer=setTimeout(()=>gdrivePush(),1000);
 }
 
 function autoSave(){
