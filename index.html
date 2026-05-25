@@ -1537,10 +1537,20 @@ async function forcePullFromCloud(){
     });
     if(!res.ok)throw new Error('HTTP '+res.status);
     const data=await res.json();
-    let state=data.record||data;
-    const hasKnownKeys=state&&(state.savedLogs||state.planState||state.stageTasks||state.dotState);
-    if(!hasKnownKeys){setSyncStatus('⚠️ No app data found in cloud');return;}
-    // Force apply regardless of timestamp
+    // Show what we got for debugging
+    const topKeys=Object.keys(data).join(', ');
+    const record=data.record;
+    const recordKeys=record?Object.keys(record).join(', '):'(none)';
+    setSyncStatus('Got: {'+topKeys+'} record: {'+recordKeys+'}');
+    // Try every possible location the data might be
+    let state=null;
+    if(record&&typeof record==='object'&&!Array.isArray(record)){state=record;}
+    else if(data&&typeof data==='object'&&!Array.isArray(data)&&(data.savedLogs||data.planState||data.stageTasks)){state=data;}
+    if(!state){
+      // Last resort — show raw so user can see what's there
+      setSyncStatus('⚠️ Raw: '+JSON.stringify(data).slice(0,120));
+      return;
+    }
     applyAppState(state);
     state.v=state.v||SYNC_VERSION;
     saveLocal(state);
