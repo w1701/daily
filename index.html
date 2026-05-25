@@ -250,7 +250,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <button class="nav-btn" onclick="goTo('plan',this)">12-Week Plan</button>
     <button class="nav-btn" onclick="goTo('mindset',this)">Mindset</button>
     <button class="nav-btn" id="emergency-nav-btn" onclick="goTo('emergency',this)">Emergency</button>
-    <button class="nav-btn" onclick="openSyncSettings()" title="Sync settings" style="margin-left:auto">☁️ Sync</button>
+    <button class="nav-btn" onclick="openSyncGate()" title="Sync settings" style="margin-left:auto">☁️ Sync</button>
 </div>
 </nav>
 <!-- SYNC STATUS BAR -->
@@ -622,6 +622,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div id="sync-status-text" style="font-size:12px;color:var(--green);min-height:18px"></div>
       <div style="margin-top:12px;padding:10px;background:var(--blue-bg);border-radius:var(--radius);font-size:11px;color:var(--blue-text);line-height:1.6">
         <strong>Always saved locally first</strong> — cloud sync is optional. Without an API key, everything saves automatically to this device via localStorage and persists between sessions.
+      </div>
+      <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="reset-btn" onclick="resetSyncPassphrase()">Reset passphrase</button>
+        <span style="font-size:11px;color:var(--text3)">Use if you forget your passphrase (on a device you still have access to)</span>
       </div>
     </div>
   </div>
@@ -1432,6 +1436,40 @@ function rebuildAll(){
 }
 
 // ─── SYNC SETTINGS MODAL ──────────────────────────────────────────────
+// Passphrase gate — stored in localStorage so you only enter it once per device
+const PASS_KEY='ecSyncPass';
+let _syncUnlocked=false;
+
+function openSyncGate(){
+  // Already unlocked this session
+  if(_syncUnlocked){openSyncSettings();return;}
+  // Check if passphrase is set
+  let stored;
+  try{stored=localStorage.getItem(PASS_KEY);}catch(e){stored=null;}
+  if(!stored){
+    // First time — set a passphrase
+    const p1=prompt('Set a passphrase to protect sync settings:');
+    if(!p1||!p1.trim())return;
+    const p2=prompt('Confirm passphrase:');
+    if(p1!==p2){alert('Passphrases do not match. Try again.');return;}
+    const hashed=btoa(encodeURIComponent(p1.trim()));
+    try{localStorage.setItem(PASS_KEY,hashed);}catch(e){}
+    _syncUnlocked=true;
+    openSyncSettings();
+  } else {
+    // Verify passphrase
+    const attempt=prompt('Enter sync passphrase:');
+    if(!attempt)return;
+    const hashed=btoa(encodeURIComponent(attempt.trim()));
+    if(hashed!==stored){
+      alert('Incorrect passphrase.');
+      return;
+    }
+    _syncUnlocked=true;
+    openSyncSettings();
+  }
+}
+
 function openSyncSettings(){
   document.getElementById('sync-modal').classList.add('open');
   document.getElementById('sync-key-input').value=syncKey;
@@ -1442,6 +1480,16 @@ function openSyncSettings(){
   const st=document.getElementById('sync-status-text');if(st)st.textContent='';
 }
 function closeSyncModal(){document.getElementById('sync-modal').classList.remove('open');}
+function resetSyncPassphrase(){
+  const p1=prompt('Set new passphrase:');
+  if(!p1||!p1.trim())return;
+  const p2=prompt('Confirm new passphrase:');
+  if(p1!==p2){alert('Passphrases do not match.');return;}
+  const hashed=btoa(encodeURIComponent(p1.trim()));
+  try{localStorage.setItem(PASS_KEY,hashed);}catch(e){}
+  _syncUnlocked=true;
+  alert('Passphrase updated.');
+}
 
 function saveSyncSettings(){
   syncKey=document.getElementById('sync-key-input').value.trim();
