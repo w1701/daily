@@ -617,7 +617,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
         <button class="save-btn" onclick="saveSyncSettings()">Save settings</button>
         <button class="action-btn" onclick="forcePush()">Push to cloud ↑</button>
-        <button class="action-btn" onclick="forcePull()">Pull from cloud ↓</button>
+        <button class="action-btn" onclick="forcePull()">Force pull from cloud ↓</button>
       </div>
       <div id="sync-status-text" style="font-size:12px;color:var(--green);min-height:18px"></div>
       <div style="margin-top:12px;padding:10px;background:var(--blue-bg);border-radius:var(--radius);font-size:11px;color:var(--blue-text);line-height:1.6">
@@ -1396,15 +1396,23 @@ async function pullFromCloud(){
     const local=loadLocal();
     const cloudTs=state.ts||0;
     const localTs=local?local.ts||0:0;
-    if(!local||cloudTs>localTs){
+    if(cloudTs>=localTs||!local){
+      // Cloud is newer or no local data — always load cloud
       applyAppState(state);
-      // Stamp version if missing
+      state.v=state.v||SYNC_VERSION;
+      saveLocal(state);
+      rebuildAll();
+      setSyncStatus('☁️ Loaded from cloud',3000);
+    } else if(cloudTs>0&&localTs-cloudTs<60000){
+      // Timestamps within 60s of each other — treat as same, load cloud anyway
+      applyAppState(state);
       state.v=state.v||SYNC_VERSION;
       saveLocal(state);
       rebuildAll();
       setSyncStatus('☁️ Loaded from cloud',3000);
     } else {
-      setSyncStatus('✓ Local data is up to date',3000);
+      // Local is genuinely newer (user made changes on this device)
+      setSyncStatus('✓ Local is newer — push to sync',3000);
     }
   }catch(e){setSyncStatus('⚠️ Pull failed: '+e.message);}
 }
@@ -1516,7 +1524,29 @@ function forcePush(){
 }
 function forcePull(){
   if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');openSyncSettings();return;}
-  pullFromCloud();
+  // Force pull: wipe local timestamp so cloud always wins
+  forcePullFromCloud();
+}
+
+async function forcePullFromCloud(){
+  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');return;}
+  setSyncStatus('☁️ Force loading from cloud…');
+  try{
+    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
+      headers:{'X-Master-Key':syncApiKey}
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    let state=data.record||data;
+    const hasKnownKeys=state&&(state.savedLogs||state.planState||state.stageTasks||state.dotState);
+    if(!hasKnownKeys){setSyncStatus('⚠️ No app data found in cloud');return;}
+    // Force apply regardless of timestamp
+    applyAppState(state);
+    state.v=state.v||SYNC_VERSION;
+    saveLocal(state);
+    rebuildAll();
+    setSyncStatus('☁️ Force loaded from cloud ✓',3000);
+  }catch(e){setSyncStatus('⚠️ Pull failed: '+e.message);}
 }
 
 // Patch all save points to call autoSave
@@ -1560,7 +1590,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     else bar.textContent='✨ Fresh start — data saves automatically';
   }
   // 4. Cloud pull in background, non-blocking — waits 1.5s so page renders first
-  if(syncApiKey&&syncBinId)setTimeout(pullFromCloud,1500);
+  if(syncApiKey&&syncBinId)setTimeout(forcePullFromCloud,1500);// always prefer cloud on load
   // Countdown timers
   const _oct=new Date('2026-10-31');const _apr=new Date('2027-04-15');const _now=new Date();
   const _octEl=document.getElementById('oct-days');const _aprEl=document.getElementById('apr-days');
