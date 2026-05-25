@@ -240,6 +240,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .plan-area-bar{height:3px;border-radius:99px;margin-bottom:8px;background:var(--bg2)}
 .plan-area-bar-fill{height:100%;border-radius:99px;transition:width .3s}
 </style>
+  <!-- Google Identity Services + Drive API -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
 </head>
 <body>
 <div class="app">
@@ -589,39 +592,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="modal-overlay" id="sync-modal" onclick="if(event.target===this)closeSyncModal()">
   <div class="modal" style="max-width:480px">
     <div class="modal-hdr">
-      <span class="modal-title">☁️ Sync settings</span>
+      <span class="modal-title">☁️ Google Drive sync</span>
       <button class="modal-close" onclick="closeSyncModal()">×</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Your data is always saved locally on this device. To sync across devices (phone + laptop), connect a free <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">JSONBin.io</a> account.</p>
-      <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.8">
-        <strong style="color:var(--text)">Setup (2 minutes):</strong><br>
-        1. Go to <strong>jsonbin.io</strong> → Sign up free<br>
-        2. Click <strong>API Keys</strong> → Create a Master Key<br>
-        3. Paste it below → tap Save → tap Push to cloud<br>
-        4. On second device: enter same API key + paste the Bin ID
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Sync your data across devices using your Google Drive. Your data is stored in a private file called <strong>escape-plan-sync.json</strong> in your Drive — only you can access it.
+      </p>
+      <div id="gdrive-status-box" style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.8">
+        Status: <span id="gdrive-auth-status">Not signed in</span>
       </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Master API Key</label>
-        <input type="password" id="sync-api-input" placeholder="$2a$10$..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
-      </div>
-      <div style="margin-bottom:10px">
-        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Bin ID <span style="font-weight:400">(auto-filled after first save; copy to second device)</span></label>
-        <input type="text" id="sync-bin-input" placeholder="auto-filled after first push" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
-        <div id="bin-id-display" style="margin-top:6px;font-size:11px;color:var(--text3)"></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Label <span style="font-weight:400">(optional nickname)</span></label>
-        <input type="text" id="sync-key-input" placeholder="my-escape-plan" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
+      <div style="margin-bottom:12px">
+        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">
+          Google OAuth Client ID
+          <span style="font-weight:400"> — from Google Cloud Console</span>
+        </label>
+        <input type="text" id="gdrive-client-id" placeholder="xxxx.apps.googleusercontent.com"
+          style="width:100%;font-size:12px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
+        <div style="margin-top:6px;font-size:11px;color:var(--text3)">
+          <a href="https://console.cloud.google.com" target="_blank" style="color:var(--blue)">console.cloud.google.com</a>
+          → New project → Enable Drive API → OAuth credentials → Web app
+        </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
-        <button class="save-btn" onclick="saveSyncSettings()">Save settings</button>
-        <button class="action-btn" onclick="forcePush()">Push to cloud ↑</button>
-        <button class="action-btn" onclick="forcePull()">Force pull from cloud ↓</button>
+        <button class="save-btn" id="gdrive-signin-btn" onclick="gdriveSignIn()">Sign in with Google</button>
+        <button class="action-btn" id="gdrive-signout-btn" onclick="gdriveSignOut()" style="display:none">Sign out</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="action-btn" onclick="gdrivePush()" id="gdrive-push-btn" disabled>Push to Drive ↑</button>
+        <button class="action-btn" onclick="gdrivePull()" id="gdrive-pull-btn" disabled>Pull from Drive ↓</button>
       </div>
       <div id="sync-status-text" style="font-size:12px;color:var(--green);min-height:18px"></div>
       <div style="margin-top:12px;padding:10px;background:var(--blue-bg);border-radius:var(--radius);font-size:11px;color:var(--blue-text);line-height:1.6">
-        <strong>Always saved locally first</strong> — cloud sync is optional. Without an API key, everything saves automatically to this device via localStorage and persists between sessions.
+        <strong>Always saved locally first.</strong> Google Drive sync is optional — the app works fully offline. Sign in on each device with the same Google account to keep data in sync.
       </div>
       <div style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <button class="reset-btn" onclick="resetSyncPassphrase()">Reset passphrase</button>
@@ -629,6 +632,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       </div>
     </div>
   </div>
+</div>
+
 </div>
 
 </div>
@@ -643,6 +648,15 @@ window.addEventListener('unhandledrejection',function(e){
   const bar=document.getElementById('sync-status-bar-text');
   if(bar)bar.textContent='⚠️ '+String(e.reason);
 });
+function gapiLoaded(){
+  gapi.load('client',async()=>{
+    await gapi.client.init({});
+    // If client ID already saved, init token client silently
+    if(_gClientId&&window.google&&window.google.accounts){
+      initGoogleDrive();
+    }
+  });
+}
 // ─── HELPERS ──────────────────────────────────────────────────────────
 function dk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function todayStr(){return dk(new Date())}
@@ -1259,17 +1273,36 @@ function updateWeekStartLabel(){const mon=getWeekMon(new Date());const label=mon
 
 // ─── INIT ─────────────────────────────────────────────────────────────
 
-// ─── PERSISTENCE ──────────────────────────────────────────────────────
+// ─── PERSISTENCE: Google Drive Sync ──────────────────────────────────
 const SYNC_VERSION=1;
-let syncKey='',syncBinId='',syncApiKey='';
-try{
-  syncKey=localStorage.getItem('ecSyncKey')||'';
-  syncBinId=localStorage.getItem('ecSyncBinId')||'';
-  syncApiKey=localStorage.getItem('ecSyncApiKey')||'';
-}catch(e){}
-let _pushTimer=null;   // debounce timer for cloud push
-let _pushing=false;    // prevent concurrent pushes
-let _pendingPush=false;// queue one more push if one is in flight
+const GDRIVE_FILE_NAME='escape-plan-sync.json';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+
+// State
+let _gdriveReady=false;
+let _gdriveFileId=null;
+let _tokenClient=null;
+let _pushTimer=null;
+let _pushing=false;
+let _pendingPush=false;
+let _gClientId='';
+
+// Load client ID from localStorage
+try{_gClientId=localStorage.getItem('ecGClientId')||'';}catch(e){}
+
+// ─── LOCAL STORAGE ────────────────────────────────────────────────────
+let _localStorageAvailable=(()=>{try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true;}catch(e){return false;}})();
+
+function saveLocal(state){
+  if(!_localStorageAvailable)return;
+  try{localStorage.setItem('ecAppState',JSON.stringify(state));}
+  catch(e){_localStorageAvailable=false;setSyncStatus('⚠️ Storage unavailable');}
+}
+function loadLocal(){
+  if(!_localStorageAvailable)return null;
+  try{const s=localStorage.getItem('ecAppState');return s?JSON.parse(s):null;}
+  catch(e){return null;}
+}
 
 // ─── STATE SNAPSHOT ───────────────────────────────────────────────────
 function getAppState(){
@@ -1282,7 +1315,7 @@ function getAppState(){
   };
 }
 function applyAppState(state){
-  if(!state||!state.v)return;
+  if(!state)return;
   if(state.savedLogs)Object.assign(savedLogs,state.savedLogs);
   if(state.planState)Object.assign(planState,state.planState);
   if(state.planTaskLabels)Object.assign(planTaskLabels,state.planTaskLabels);
@@ -1292,129 +1325,170 @@ function applyAppState(state){
   if(state.planAreaFilter)Object.assign(planAreaFilter,state.planAreaFilter);
   if(state.activePlanStageFilter!==undefined)activePlanStageFilter=state.activePlanStageFilter;
   if(state.activeAreaFilter!==undefined)activeAreaFilter=state.activeAreaFilter;
-  if(state.stageTasks)state.stageTasks.forEach((stageTasks,si)=>{
+  if(state.stageTasks)state.stageTasks.forEach((st,si)=>{
     if(!STAGE_DEFS[si])return;
-    stageTasks.forEach((weekTasks,wi)=>{
+    st.forEach((wt,wi)=>{
       if(!STAGE_DEFS[si].weeks[wi])return;
-      STAGE_DEFS[si].weeks[wi].tasks=weekTasks.map(t=>({t:t.t,cat:t.cat,done:false}));
+      STAGE_DEFS[si].weeks[wi].tasks=wt.map(t=>({t:t.t,cat:t.cat,done:false}));
     });
   });
 }
 
-// ─── LOCAL STORAGE ────────────────────────────────────────────────────
-let _localStorageAvailable=(()=>{try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true;}catch(e){return false;}})();
-
-function saveLocal(state){
-  if(!_localStorageAvailable)return;
-  try{localStorage.setItem('ecAppState',JSON.stringify(state));}
-  catch(e){_localStorageAvailable=false;setSyncStatus('⚠️ Storage unavailable — data not saved locally');}
-}
-function loadLocal(){
-  if(!_localStorageAvailable)return null;
-  try{const s=localStorage.getItem('ecAppState');return s?JSON.parse(s):null;}
-  catch(e){return null;}
+function rebuildAll(){
+  buildTracker();buildAllPlanStages();syncPlanToOverview();
+  renderThisWeekTasks();checkWeekCompliance();updateWeekStartLabel();
+  buildMoodCal();buildReflections();refreshSavedList();
 }
 
-// ─── CLOUD PUSH (debounced 4s) ────────────────────────────────────────
-function scheduleCloudPush(){
-  if(!syncApiKey||!syncBinId)return;
-  clearTimeout(_pushTimer);
-  _pushTimer=setTimeout(()=>doCloudPush(getAppState()),4000);
+// ─── GOOGLE IDENTITY SERVICES ─────────────────────────────────────────
+function initGoogleDrive(){
+  if(!_gClientId||!window.google)return;
+  try{
+    _tokenClient=google.accounts.oauth2.initTokenClient({
+      client_id:_gClientId,
+      scope:GDRIVE_SCOPE,
+      callback:(resp)=>{
+        if(resp.error){setSyncStatus('⚠️ Auth error: '+resp.error);return;}
+        _gdriveReady=true;
+        updateGdriveUI(true);
+        setSyncStatus('✓ Signed in to Google',3000);
+        try{localStorage.setItem('ecGClientId',_gClientId);}catch(e){}
+        // Auto-pull after sign in
+        gdrivePull();
+      }
+    });
+    // Check if we already have a valid token (silently)
+    google.accounts.oauth2.revoke; // just check gsi loaded
+    updateGdriveUI(false);
+  }catch(e){setSyncStatus('⚠️ Google init failed: '+e.message);}
 }
 
-async function doCloudPush(state){
+function gdriveSignIn(){
+  // Save client ID first
+  const inp=document.getElementById('gdrive-client-id');
+  if(inp&&inp.value.trim()){
+    _gClientId=inp.value.trim();
+    try{localStorage.setItem('ecGClientId',_gClientId);}catch(e){}
+  }
+  if(!_gClientId){setSyncStatus('⚠️ Paste your Client ID first');return;}
+  if(!window.google||!window.google.accounts){setSyncStatus('⚠️ Google script not loaded — check your internet connection');return;}
+  // Re-init with potentially new client ID
+  initGoogleDrive();
+  if(_tokenClient){_tokenClient.requestAccessToken({prompt:'consent'});}
+  else{setSyncStatus('⚠️ Init failed — check Client ID format');}
+}
+
+function gdriveSignOut(){
+  _gdriveReady=false;_gdriveFileId=null;
+  google.accounts.oauth2.revoke(gapi.client.getToken()&&gapi.client.getToken().access_token||'',()=>{});
+  if(window.gapi&&gapi.client)gapi.client.setToken(null);
+  updateGdriveUI(false);
+  setSyncStatus('Signed out',2000);
+}
+
+function updateGdriveUI(signedIn){
+  const authStatus=document.getElementById('gdrive-auth-status');
+  const signinBtn=document.getElementById('gdrive-signin-btn');
+  const signoutBtn=document.getElementById('gdrive-signout-btn');
+  const pushBtn=document.getElementById('gdrive-push-btn');
+  const pullBtn=document.getElementById('gdrive-pull-btn');
+  if(authStatus)authStatus.textContent=signedIn?'✅ Signed in':'Not signed in';
+  if(signinBtn)signinBtn.style.display=signedIn?'none':'inline-flex';
+  if(signoutBtn)signoutBtn.style.display=signedIn?'inline-flex':'none';
+  if(pushBtn)pushBtn.disabled=!signedIn;
+  if(pullBtn)pullBtn.disabled=!signedIn;
+  // Also populate client ID field
+  const clientInp=document.getElementById('gdrive-client-id');
+  if(clientInp&&_gClientId&&!clientInp.value)clientInp.value=_gClientId;
+}
+
+// ─── DRIVE FILE OPS ───────────────────────────────────────────────────
+async function getDriveFileId(){
+  if(_gdriveFileId)return _gdriveFileId;
+  // Search for existing file
+  const q=encodeURIComponent("name='"+GDRIVE_FILE_NAME+"' and trashed=false");
+  const res=await gapiFetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)');
+  const data=await res.json();
+  if(data.files&&data.files.length>0){_gdriveFileId=data.files[0].id;return _gdriveFileId;}
+  return null;
+}
+
+async function gapiFetch(url,options={}){
+  const token=gapi.client.getToken();
+  if(!token)throw new Error('Not authenticated');
+  const headers={...options.headers||{},'Authorization':'Bearer '+token.access_token};
+  return fetch(url,{...options,headers});
+}
+
+async function gdrivePush(){
+  if(!_gdriveReady){setSyncStatus('Sign in to Google first');return;}
   if(_pushing){_pendingPush=true;return;}
   _pushing=true;_pendingPush=false;
-  setSyncStatus('☁️ Syncing…');
+  setSyncStatus('☁️ Saving to Drive…');
   try{
-    const body=JSON.stringify({record:state});
-    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json','X-Master-Key':syncApiKey},
-      body
-    });
+    const state=getAppState();
+    const body=JSON.stringify(state);
+    const fileId=await getDriveFileId();
+    let res;
+    if(fileId){
+      // Update existing file
+      res=await gapiFetch('https://www.googleapis.com/upload/drive/v3/files/'+fileId+'?uploadType=media',{
+        method:'PATCH',headers:{'Content-Type':'application/json'},body
+      });
+    } else {
+      // Create new file with metadata + content (multipart)
+      const boundary='escape_plan_boundary';
+      const meta=JSON.stringify({name:GDRIVE_FILE_NAME,mimeType:'application/json'});
+      const multipart='--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+meta+
+        '\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'+body+'\r\n--'+boundary+'--';
+      res=await gapiFetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',{
+        method:'POST',headers:{'Content-Type':'multipart/related; boundary='+boundary},body:multipart
+      });
+      if(res.ok){const d=await res.clone().json();if(d.id)_gdriveFileId=d.id;}
+    }
     if(!res.ok)throw new Error('HTTP '+res.status);
-    setSyncStatus('☁️ Synced',3000);
-  }catch(e){
-    setSyncStatus('⚠️ Sync failed — saved locally');
-  }
+    saveLocal(state);
+    setSyncStatus('☁️ Saved to Drive ✓',3000);
+  }catch(e){setSyncStatus('⚠️ Push failed: '+e.message);}
   _pushing=false;
-  if(_pendingPush)setTimeout(()=>doCloudPush(getAppState()),500);
+  if(_pendingPush)setTimeout(()=>gdrivePush(),500);
 }
 
-// ─── CLOUD CREATE (first push — creates the bin) ──────────────────────
-async function createCloudBin(state){
-  setSyncStatus('☁️ Creating sync bin…');
+async function gdrivePull(){
+  if(!_gdriveReady){setSyncStatus('Sign in to Google first');return;}
+  setSyncStatus('☁️ Loading from Drive…');
   try{
-    const res=await fetch('https://api.jsonbin.io/v3/b',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':syncApiKey,
-               'X-Bin-Name':'EscapePlan'+(syncKey?'-'+syncKey:''),'X-Bin-Private':'true'},
-      body:JSON.stringify({record:state})
-    });
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    if(data.metadata&&data.metadata.id){
-      syncBinId=data.metadata.id;
-      try{localStorage.setItem('ecSyncBinId',syncBinId);}catch(e){}
-      const binInput=document.getElementById('sync-bin-input');
-      if(binInput)binInput.value=syncBinId;
-      const binDisplay=document.getElementById('bin-id-display');
-      if(binDisplay)binDisplay.innerHTML='<strong>Bin ID: '+syncBinId+'</strong> — copy this to your second device';
-      setSyncStatus('☁️ Sync bin created! Copy the Bin ID above.',5000);
-    }
-  }catch(e){setSyncStatus('⚠️ Could not create bin: '+e.message);}
-}
-
-// ─── CLOUD PULL ───────────────────────────────────────────────────────
-async function pullFromCloud(){
-  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');return;}
-  setSyncStatus('☁️ Loading from cloud…');
-  try{
-    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
-      headers:{'X-Master-Key':syncApiKey}
-    });
-    if(!res.ok)throw new Error('HTTP '+res.status);
-    const data=await res.json();
-    // JSONBin wraps response in {record:...} — handle both direct and wrapped
-    let state=data.record||data;
-    // If the cloud has old format data (no v field), treat it as empty and
-    // overwrite with current local state rather than failing
-    if(!state||typeof state!=='object'||Array.isArray(state)){
-      setSyncStatus('☁️ Cloud empty — pushing local data…');
-      await doCloudPush(getAppState());
+    const fileId=await getDriveFileId();
+    if(!fileId){
+      setSyncStatus('No sync file found in Drive — push first from another device',4000);
       return;
     }
-    // Accept data with or without version field — just look for known keys
-    const hasKnownKeys=state.savedLogs||state.planState||state.stageTasks||state.dotState;
-    if(!hasKnownKeys){
-      // Cloud bin exists but has no app data — push local up
-      setSyncStatus('☁️ Cloud empty — pushing local data…');
-      await doCloudPush(getAppState());
-      return;
-    }
+    const res=await gapiFetch('https://www.googleapis.com/drive/v3/files/'+fileId+'?alt=media');
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const state=await res.json();
+    if(!state||typeof state!=='object'){setSyncStatus('⚠️ Invalid data in Drive file');return;}
     const local=loadLocal();
     const cloudTs=state.ts||0;
     const localTs=local?local.ts||0:0;
-    if(cloudTs>=localTs||!local){
-      // Cloud is newer or no local data — always load cloud
-      applyAppState(state);
-      state.v=state.v||SYNC_VERSION;
-      saveLocal(state);
-      rebuildAll();
-      setSyncStatus('☁️ Loaded from cloud',3000);
-    } else if(cloudTs>0&&localTs-cloudTs<60000){
-      // Timestamps within 60s of each other — treat as same, load cloud anyway
-      applyAppState(state);
-      state.v=state.v||SYNC_VERSION;
-      saveLocal(state);
-      rebuildAll();
-      setSyncStatus('☁️ Loaded from cloud',3000);
-    } else {
-      // Local is genuinely newer (user made changes on this device)
-      setSyncStatus('✓ Local is newer — push to sync',3000);
-    }
+    applyAppState(state);
+    state.v=state.v||SYNC_VERSION;
+    saveLocal(state);
+    rebuildAll();
+    setSyncStatus('☁️ Loaded from Drive ✓',3000);
   }catch(e){setSyncStatus('⚠️ Pull failed: '+e.message);}
+}
+
+// ─── AUTO SAVE ────────────────────────────────────────────────────────
+function scheduleCloudPush(){
+  if(!_gdriveReady)return;
+  clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>gdrivePush(),4000);
+}
+
+function autoSave(){
+  const state=getAppState();
+  saveLocal(state);
+  scheduleCloudPush();
 }
 
 // ─── STATUS ───────────────────────────────────────────────────────────
@@ -1424,38 +1498,21 @@ function setSyncStatus(msg,clearMs){
   const bar=document.getElementById('sync-status-bar-text');
   if(bar)bar.textContent=msg;
   if(clearMs)setTimeout(()=>{
-    const idle=syncApiKey&&syncBinId?'☁️ Sync on':'💾 Local only';
+    const idle=_gdriveReady?'☁️ Drive sync on':'💾 Local only';
     if(el)el.textContent='';
     if(bar)bar.textContent=idle;
   },clearMs);
 }
 
-// ─── AUTO SAVE (local immediately, cloud debounced) ───────────────────
-function autoSave(){
-  const state=getAppState();
-  saveLocal(state);         // instant, synchronous
-  scheduleCloudPush();      // debounced 4s — batches rapid changes
-}
-
-function rebuildAll(){
-  buildTracker();buildAllPlanStages();syncPlanToOverview();
-  renderThisWeekTasks();checkWeekCompliance();updateWeekStartLabel();
-  buildMoodCal();buildReflections();refreshSavedList();
-}
-
-// ─── SYNC SETTINGS MODAL ──────────────────────────────────────────────
-// Passphrase gate — stored in localStorage so you only enter it once per device
+// ─── PASSPHRASE GATE ─────────────────────────────────────────────────
 const PASS_KEY='ecSyncPass';
 let _syncUnlocked=false;
 
 function openSyncGate(){
-  // Already unlocked this session
   if(_syncUnlocked){openSyncSettings();return;}
-  // Check if passphrase is set
   let stored;
   try{stored=localStorage.getItem(PASS_KEY);}catch(e){stored=null;}
   if(!stored){
-    // First time — set a passphrase
     const p1=prompt('Set a passphrase to protect sync settings:');
     if(!p1||!p1.trim())return;
     const p2=prompt('Confirm passphrase:');
@@ -1465,14 +1522,10 @@ function openSyncGate(){
     _syncUnlocked=true;
     openSyncSettings();
   } else {
-    // Verify passphrase
     const attempt=prompt('Enter sync passphrase:');
     if(!attempt)return;
     const hashed=btoa(encodeURIComponent(attempt.trim()));
-    if(hashed!==stored){
-      alert('Incorrect passphrase.');
-      return;
-    }
+    if(hashed!==stored){alert('Incorrect passphrase.');return;}
     _syncUnlocked=true;
     openSyncSettings();
   }
@@ -1480,12 +1533,8 @@ function openSyncGate(){
 
 function openSyncSettings(){
   document.getElementById('sync-modal').classList.add('open');
-  document.getElementById('sync-key-input').value=syncKey;
-  document.getElementById('sync-api-input').value=syncApiKey;
-  document.getElementById('sync-bin-input').value=syncBinId;
-  const binDisplay=document.getElementById('bin-id-display');
-  if(binDisplay)binDisplay.textContent=syncBinId?'Bin ID: '+syncBinId+' (copy this to your second device)':'';
-  const st=document.getElementById('sync-status-text');if(st)st.textContent='';
+  updateGdriveUI(_gdriveReady);
+  const el=document.getElementById('sync-status-text');if(el)el.textContent='';
 }
 function closeSyncModal(){document.getElementById('sync-modal').classList.remove('open');}
 function resetSyncPassphrase(){
@@ -1499,72 +1548,7 @@ function resetSyncPassphrase(){
   alert('Passphrase updated.');
 }
 
-function saveSyncSettings(){
-  syncKey=document.getElementById('sync-key-input').value.trim();
-  syncApiKey=document.getElementById('sync-api-input').value.trim();
-  syncBinId=document.getElementById('sync-bin-input').value.trim();
-  try{localStorage.setItem('ecSyncKey',syncKey);localStorage.setItem('ecSyncApiKey',syncApiKey);localStorage.setItem('ecSyncBinId',syncBinId);}catch(e){}
-  if(syncApiKey&&syncBinId){
-    setSyncStatus('Settings saved — pulling from cloud…');
-    pullFromCloud();
-    const d=document.getElementById('bin-id-display');
-    if(d)d.innerHTML='<strong>Bin ID: '+syncBinId+'</strong> — copy this to your second device';
-  } else if(syncApiKey&&!syncBinId){
-    setSyncStatus('API key saved. Tap "Push ↑" to create your sync bin.');
-  } else if(!syncApiKey){
-    setSyncStatus('Cleared — saving locally only');setTimeout(closeSyncModal,1500);
-  }
-}
-
-function forcePush(){
-  const state=getAppState();saveLocal(state);
-  if(!syncApiKey){setSyncStatus('Enter API key first');return;}
-  if(!syncBinId){createCloudBin(state);}
-  else{doCloudPush(state);}
-}
-function forcePull(){
-  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');openSyncSettings();return;}
-  // Force pull: wipe local timestamp so cloud always wins
-  forcePullFromCloud();
-}
-
-async function forcePullFromCloud(){
-  if(!syncApiKey||!syncBinId){setSyncStatus('No API key or Bin ID — open Sync settings');return;}
-  setSyncStatus('Step 1: contacting JSONBin…');
-  let res,data;
-  try{
-    res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
-      headers:{'X-Master-Key':syncApiKey}
-    });
-  }catch(e){
-    setSyncStatus('⚠️ Network error: '+e.message+' — check your connection');
-    return;
-  }
-  setSyncStatus('Step 2: response '+res.status+(res.ok?' OK':' ERROR'));
-  if(!res.ok){setSyncStatus('⚠️ Server error '+res.status+' — check API key and Bin ID');return;}
-  try{data=await res.json();}
-  catch(e){setSyncStatus('⚠️ Bad JSON from server: '+e.message);return;}
-  setSyncStatus('Step 3: got keys: '+Object.keys(data).join(', '));
-  await new Promise(r=>setTimeout(r,2000));// pause so user can read step 3
-  const record=data.record;
-  setSyncStatus('Step 4: record keys: '+(record?Object.keys(record).join(', '):'(empty)'));
-  await new Promise(r=>setTimeout(r,2000));
-  let state=null;
-  if(record&&typeof record==='object'&&!Array.isArray(record)){state=record;}
-  else if(data&&typeof data==='object'&&(data.savedLogs||data.planState||data.stageTasks||data.dotState)){state=data;}
-  if(!state){
-    setSyncStatus('⚠️ No app data in cloud. Keys found: '+JSON.stringify(data).slice(0,100));
-    return;
-  }
-  setSyncStatus('Step 5: applying state…');
-  applyAppState(state);
-  state.v=state.v||SYNC_VERSION;
-  saveLocal(state);
-  rebuildAll();
-  setSyncStatus('✅ Loaded from cloud!',5000);
-}
-
-// Patch all save points to call autoSave
+// ─── PATCH SAVE POINTS ───────────────────────────────────────────────
 const _origSaveFromForm=saveFromForm;
 saveFromForm=function(dateKey,type){_origSaveFromForm(dateKey,type);setTimeout(autoSave,100);};
 const _origTogglePlanTask=togglePlanTask;
@@ -1577,7 +1561,6 @@ const _origDeleteLog=deleteLog;
 deleteLog=function(k){_origDeleteLog(k);setTimeout(autoSave,100);};
 const _origChangePlanTaskCat=changePlanTaskCat;
 changePlanTaskCat=function(si,wi,ti,cat){_origChangePlanTaskCat(si,wi,ti,cat);setTimeout(autoSave,200);};
-// Patch plan-inp changes
 document.addEventListener('change',function(e){
   if(e.target.classList.contains('plan-inp')||e.target.classList.contains('wk-label')){setTimeout(autoSave,500);}
 });
@@ -1596,17 +1579,15 @@ document.addEventListener('DOMContentLoaded',()=>{
   buildTracker();
   checkWeekCompliance();
   refreshSavedList();
-  // 3. Show status
+  // 3. Status bar
   const bar=document.getElementById('sync-status-bar-text');
   if(bar){
-    if(localState&&!syncApiKey) bar.textContent='💾 Loaded — tap ☁️ Sync to enable cloud';
-    else if(localState&&syncApiKey&&!syncBinId) bar.textContent='💾 Loaded locally';
-    else if(syncApiKey&&syncBinId) bar.textContent='☁️ Sync on — checking for updates…';
+    if(localState)bar.textContent='💾 Loaded locally — tap ☁️ Sync to connect Google Drive';
     else bar.textContent='✨ Fresh start — data saves automatically';
   }
-  // 4. Cloud pull in background, non-blocking — waits 1.5s so page renders first
-  if(syncApiKey&&syncBinId)setTimeout(forcePullFromCloud,1500);// always prefer cloud on load
-  // Countdown timers
+  // 4. Init Google Drive if client ID saved (silent — no popup)
+  if(_gClientId&&window.google)setTimeout(initGoogleDrive,800);
+  // 5. Countdown timers
   const _oct=new Date('2026-10-31');const _apr=new Date('2027-04-15');const _now=new Date();
   const _octEl=document.getElementById('oct-days');const _aprEl=document.getElementById('apr-days');
   if(_octEl)_octEl.textContent=Math.max(0,Math.ceil((_oct-_now)/86400000));
