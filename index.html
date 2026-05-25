@@ -651,9 +651,9 @@ window.addEventListener('unhandledrejection',function(e){
 function gapiLoaded(){
   gapi.load('client',async()=>{
     await gapi.client.init({});
-    // If client ID already saved, init token client silently
+    // If client ID already saved, attempt silent sign-in on load
     if(_gClientId&&window.google&&window.google.accounts){
-      initGoogleDrive();
+      initGoogleDriveTokenClient(false);// false = silent, no popup
     }
   });
 }
@@ -1342,25 +1342,8 @@ function rebuildAll(){
 
 // ─── GOOGLE IDENTITY SERVICES ─────────────────────────────────────────
 function initGoogleDrive(){
-  if(!_gClientId||!window.google)return;
-  try{
-    _tokenClient=google.accounts.oauth2.initTokenClient({
-      client_id:_gClientId,
-      scope:GDRIVE_SCOPE,
-      callback:(resp)=>{
-        if(resp.error){setSyncStatus('⚠️ Auth error: '+resp.error);return;}
-        _gdriveReady=true;
-        updateGdriveUI(true);
-        setSyncStatus('✓ Signed in to Google',3000);
-        try{localStorage.setItem('ecGClientId',_gClientId);}catch(e){}
-        // Auto-pull after sign in
-        gdrivePull();
-      }
-    });
-    // Check if we already have a valid token (silently)
-    google.accounts.oauth2.revoke; // just check gsi loaded
-    updateGdriveUI(false);
-  }catch(e){setSyncStatus('⚠️ Google init failed: '+e.message);}
+  // Wrapper — used by gapiLoaded and DOMContentLoaded
+  initGoogleDriveTokenClient(false);
 }
 
 function gdriveSignIn(){
@@ -1371,11 +1354,36 @@ function gdriveSignIn(){
     try{localStorage.setItem('ecGClientId',_gClientId);}catch(e){}
   }
   if(!_gClientId){setSyncStatus('⚠️ Paste your Client ID first');return;}
-  if(!window.google||!window.google.accounts){setSyncStatus('⚠️ Google script not loaded — check your internet connection');return;}
-  // Re-init with potentially new client ID
-  initGoogleDrive();
-  if(_tokenClient){_tokenClient.requestAccessToken({prompt:'consent'});}
-  else{setSyncStatus('⚠️ Init failed — check Client ID format');}
+  if(!window.google||!window.google.accounts){setSyncStatus('⚠️ Google script not loaded — check internet connection');return;}
+  // Re-init token client with new client ID if needed
+  _tokenClient=null;
+  initGoogleDriveTokenClient(true);// true = show account picker
+}
+
+function initGoogleDriveTokenClient(showPrompt){
+  if(!_gClientId||!window.google||!window.google.accounts)return;
+  _tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:_gClientId,
+    scope:GDRIVE_SCOPE,
+    callback:(resp)=>{
+      if(resp.error){
+        if(resp.error==='interaction_required'||resp.error==='access_denied'){
+          updateGdriveUI(false);
+        } else {
+          setSyncStatus('⚠️ Auth error: '+resp.error);
+        }
+        return;
+      }
+      _gdriveReady=true;
+      updateGdriveUI(true);
+      try{localStorage.setItem('ecGClientId',_gClientId);}catch(e){}
+      const bar=document.getElementById('sync-status-bar-text');
+      if(bar)bar.textContent='☁️ Drive sync on';
+      setSyncStatus('✓ Signed in',2000);
+      gdrivePull();
+    }
+  });
+  _tokenClient.requestAccessToken(showPrompt?{prompt:'select_account'}:{prompt:''});
 }
 
 function gdriveSignOut(){
@@ -1586,7 +1594,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     else bar.textContent='✨ Fresh start — data saves automatically';
   }
   // 4. Init Google Drive if client ID saved (silent — no popup)
-  if(_gClientId&&window.google)setTimeout(initGoogleDrive,800);
+  // Google Drive init is handled by gapiLoaded() once gapi script loads
   // 5. Countdown timers
   const _oct=new Date('2026-10-31');const _apr=new Date('2027-04-15');const _now=new Date();
   const _octEl=document.getElementById('oct-days');const _aprEl=document.getElementById('apr-days');
