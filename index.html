@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Escape Command Center</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f5f5f0;--bg3:#eee;
+  --text:#1a1a1a;--text2:#666;--text3:#aaa;
+  --border:rgba(0,0,0,0.1);--border2:rgba(0,0,0,0.2);
+  --green:#1D9E75;--amber:#EF9F27;--red:#E24B4A;--blue:#378ADD;--purple:#7F77DD;
+  --green-bg:#E1F5EE;--green-text:#085041;
+  --amber-bg:#FAEEDA;--amber-text:#633806;
+  --blue-bg:#E6F1FB;--blue-text:#0C447C;
+  --purple-bg:#EEEDFE;--purple-text:#3C3489;
+  --teal-bg:#E1F5EE;--teal-text:#085041;
+  --gray-bg:#F1EFE8;--gray-text:#5F5E5A;
+  --red-bg:#FCEBEB;--red-text:#A32D2D;
+  --radius:8px;--radius-lg:12px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1a1a1a;--bg2:#242424;--bg3:#2e2e2e;
+  --text:#f0f0f0;--text2:#aaa;--text3:#555;
+  --border:rgba(255,255,255,0.1);--border2:rgba(255,255,255,0.18);
+  --green-bg:#04342C;--green-text:#9FE1CB;
+  --amber-bg:#412402;--amber-text:#FAC775;
+  --blue-bg:#042C53;--blue-text:#B5D4F4;
+  --purple-bg:#26215C;--purple-text:#CECBF6;
+  --teal-bg:#04342C;--teal-text:#9FE1CB;
+  --gray-bg:#2C2C2A;--gray-text:#D3D1C7;
+  --red-bg:#501313;--red-text:#F7C1C1;
+}}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg3);color:var(--text);font-size:15px;line-height:1.5;min-height:100vh}
+.app{max-width:780px;margin:0 auto;background:var(--bg);min-height:100vh}
+.top-nav{background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;overflow-x:auto;white-space:nowrap;scrollbar-width:none}
+.top-nav::-webkit-scrollbar{display:none}
+.top-nav-inner{display:inline-flex;min-width:100%}
+.nav-btn{font-size:12px;padding:13px 14px;border:none;background:none;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit}
+.nav-btn.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+.nav-btn.alert-cue{color:var(--red);animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.page{display:none;padding:16px}.page.active{display:block}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:500;color:var(--text);margin:0 0 10px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:500px){.grid4{grid-template-columns:repeat(4,1fr)}}
+.metric{background:var(--bg2);border-radius:var(--radius);padding:10px;text-align:center}
+.metric-label{font-size:11px;color:var(--text2);margin:0 0 3px}
+.metric-val{font-size:20px;font-weight:600;color:var(--text)}
+.metric-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.badge{font-size:10px;font-weight:500;padding:2px 8px;border-radius:99px;display:inline-block}
+.b-green{background:var(--green-bg);color:var(--green-text)}.b-amber{background:var(--amber-bg);color:var(--amber-text)}
+.b-blue{background:var(--blue-bg);color:var(--blue-text)}.b-purple{background:var(--purple-bg);color:var(--purple-text)}
+.b-teal{background:var(--teal-bg);color:var(--teal-text)}.b-gray{background:var(--gray-bg);color:var(--gray-text)}
+.b-red{background:var(--red-bg);color:var(--red-text)}
+.prog-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.prog-label{font-size:12px;color:var(--text2);min-width:80px}
+.prog-wrap{flex:1;background:var(--bg2);border-radius:99px;height:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .3s}
+.prog-count{font-size:11px;color:var(--text2);min-width:28px;text-align:right}
+.q-list{list-style:none;padding:0;margin:0}
+.q-item{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.q-item:first-child{border-top:none}
+.q-item.done{opacity:.4}.q-item.done .q-text{text-decoration:line-through}
+.q-check{width:20px;height:20px;border-radius:4px;border:1.5px solid var(--border2);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.q-item.done .q-check{background:var(--green);border-color:var(--green)}
+.q-text{flex:1;font-size:14px;line-height:1.4}.q-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.tab-row{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;scrollbar-width:none}
+.tab-row::-webkit-scrollbar{display:none}
+.tab{font-size:12px;padding:6px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit}
+.tab.active{background:var(--bg2);color:var(--text);font-weight:500;border-color:var(--border2)}
+.iview{display:none}.iview.active{display:block}
+.day-wrap{border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:10px}
+.hour-row{display:grid;grid-template-columns:44px 1fr 1fr;border-bottom:1px solid var(--border)}
+.hour-row:last-child{border-bottom:none}
+.hr-label{font-size:10px;color:var(--text3);padding:5px 4px 5px 8px;border-right:1px solid var(--border);display:flex;align-items:center;flex-shrink:0}
+.hr-planned{font-size:11px;padding:4px 8px;line-height:1.3;display:flex;align-items:center;border-right:1px solid var(--border);background:var(--bg2)}
+.hr-planned input{width:100%;font-size:11px;padding:2px 4px;border:none;background:transparent;color:var(--text);font-family:inherit;outline:none}
+.hr-actual-cell{display:flex;flex-direction:column}
+.hr-actual{font-size:11px;padding:4px 6px;display:flex;align-items:center;gap:5px}
+.flag-toggle{flex-shrink:0;display:flex;align-items:center;gap:3px;font-size:10px;color:var(--text3);cursor:pointer;white-space:nowrap}
+.flag-toggle input{accent-color:var(--amber);width:12px;height:12px}
+.flag-row{padding:3px 8px 5px;display:none;gap:6px}
+.flag-row.visible{display:flex}
+.flag-row textarea{flex:1;font-size:11px;padding:4px 6px;border-radius:4px;border:1px solid var(--amber);background:var(--amber-bg);color:var(--amber-text);font-family:inherit;resize:vertical;min-height:34px}
+.hdr-lbl{background:var(--bg2);font-size:10px;font-weight:500;color:var(--text2)}
+.reflect-box{background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-top:10px}
+.reflect-title{font-size:11px;font-weight:500;color:var(--text2);margin:0 0 8px}
+.reflect-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.reflect-item label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
+.reflect-item textarea{width:100%;font-size:12px;padding:6px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);resize:vertical;min-height:48px;box-sizing:border-box;font-family:inherit}
+.smry-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+@media(min-width:420px){.smry-row{grid-template-columns:repeat(4,1fr)}}
+.month-grid{display:grid;grid-template-columns:1fr;gap:8px;margin-bottom:10px}
+@media(min-width:480px){.month-grid{grid-template-columns:1fr 1fr}}
+.month-card{border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;background:var(--bg)}
+.month-name{font-size:12px;font-weight:500;margin:0 0 5px}
+.month-stats{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:4px}
+.month-stat{font-size:11px;color:var(--text2)}.month-stat strong{color:var(--text);font-weight:500}
+.mprog-wrap{background:var(--bg2);border-radius:99px;height:5px;overflow:hidden;margin-bottom:4px}
+.mprog-fill{height:100%;border-radius:99px;transition:width .3s}
+.pg{background:var(--green)}.pa{background:var(--amber)}.pr{background:var(--red)}
+.day-dots{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.dot{width:24px;height:24px;border-radius:4px;border:1px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:var(--text3);-webkit-tap-highlight-color:transparent;touch-action:manipulation;transition:transform .1s}
+.dot:active{transform:scale(.9)}
+.dot.office{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-text)}
+.dot.wfh{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
+.dot.holiday{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-text)}
+.dot.weekend{background:var(--bg3);border-color:var(--border);cursor:default;color:var(--text3)}
+.dot-legend{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.dot-leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.dot-sw{width:12px;height:12px;border-radius:3px}
+.mode-note{font-size:11px;color:var(--text3);background:var(--bg2);padding:8px 10px;border-radius:var(--radius);margin-bottom:10px;line-height:1.7}
+.comp-section{margin-bottom:12px}
+.comp-section-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;display:flex;justify-content:space-between;align-items:baseline}
+.comp-bar-wrap{background:var(--bg2);border-radius:99px;height:7px;overflow:hidden}
+.comp-bar{height:100%;border-radius:99px;transition:width .4s}
+.comp-good{background:var(--green)}.comp-mid{background:var(--amber)}.comp-low{background:var(--red)}
+.comp-pct{font-size:13px;font-weight:600}
+.comp-pct.good{color:var(--green)}.comp-pct.mid{color:var(--amber)}.comp-pct.low{color:var(--red)}
+.insight{font-size:12px;color:var(--text2);padding:4px 0;display:flex;align-items:flex-start;gap:6px}
+.insight-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.save-bar{display:flex;gap:8px;align-items:center;margin-bottom:12px;padding:10px 12px;background:var(--bg2);border-radius:var(--radius);flex-wrap:wrap}
+.save-bar input[type=date],.day-type-sel{font-size:12px;padding:5px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit}
+.save-btn{font-size:12px;padding:6px 14px;border-radius:var(--radius);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:inherit;font-weight:500}
+.traffic-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px}
+.t-card{border-radius:var(--radius);padding:12px 8px;text-align:center;cursor:pointer;border:2px solid transparent;-webkit-tap-highlight-color:transparent}
+.t-card.sel-green{border-color:var(--green)}.t-card.sel-amber{border-color:var(--amber)}.t-card.sel-red{border-color:var(--red)}
+.tg-c{background:var(--green-bg);color:var(--green-text)}.ta-c{background:var(--amber-bg);color:var(--amber-text)}.tr-c{background:var(--red-bg);color:var(--red-text)}
+.t-lbl{font-size:12px;font-weight:500}.t-sub{font-size:10px;margin-top:2px;opacity:.8}
+/* 12-WEEK PLAN */
+.stage-header{border-radius:var(--radius-lg);padding:12px 16px;margin-bottom:8px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.stage-1-hdr{background:var(--blue-bg);border:1px solid var(--blue-text);}
+.stage-2-hdr{background:#E1F5EE;border:1px solid #085041;}
+.stage-3-hdr{background:var(--amber-bg);border:1px solid var(--amber-text);}
+.stage-4-hdr{background:var(--purple-bg);border:1px solid var(--purple-text);}
+.stage-title{font-size:14px;font-weight:500}
+.stage-1-hdr .stage-title{color:var(--blue-text)}
+.stage-2-hdr .stage-title{color:#085041}
+.stage-3-hdr .stage-title{color:var(--amber-text)}
+.stage-4-hdr .stage-title{color:var(--purple-text)}
+.stage-meta{font-size:11px;opacity:.8;margin-top:3px}
+.stage-pct{font-size:18px;font-weight:600;flex-shrink:0}
+.week-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:6px}
+.week-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:4px}
+.week-title{font-size:12px;font-weight:500;color:var(--text2)}
+.wk-row{display:flex;align-items:center;gap:8px;padding:3px 0;border-top:1px solid var(--border)}
+.wk-del{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;line-height:1;padding:0 2px;flex-shrink:0;opacity:.5}
+.wk-del:hover{color:var(--red);opacity:1}
+.wk-row:first-of-type{border-top:none}
+.wk-cb{accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer}
+.wk-label{flex:1;font-size:12px;color:var(--text);border:none;background:transparent;font-family:inherit;outline:none;padding:2px 0;cursor:text}
+.wk-label.done-text{color:var(--text3);text-decoration:line-through}
+.wk-cat{font-size:9px;padding:1px 5px;border-radius:99px;flex-shrink:0}
+.cat-tech{background:var(--blue-bg);color:var(--blue-text)}
+.cat-soft{background:var(--purple-bg);color:var(--purple-text)}
+.cat-net{background:var(--amber-bg);color:var(--amber-text)}
+.cat-app{background:var(--green-bg);color:var(--green-text)}
+.cat-gen{background:var(--gray-bg);color:var(--gray-text)}
+.add-task-btn{font-size:11px;color:var(--text3);background:none;border:1px dashed var(--border);border-radius:var(--radius);padding:4px 10px;cursor:pointer;width:100%;margin-top:4px;font-family:inherit;text-align:left}
+.add-task-btn:hover{border-color:var(--border2);color:var(--text2)}
+.phase-lbl{font-size:10px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 5px}
+.reframe-box{background:var(--bg2);border-radius:var(--radius);padding:10px 14px;margin-bottom:8px}
+.reframe-text{font-size:13px;color:var(--text);font-style:italic;line-height:1.6}
+.mindset-q{font-size:13px;color:var(--text);padding:8px 0;border-bottom:1px solid var(--border);line-height:1.4}
+.mindset-q:last-child{border-bottom:none}
+.mindset-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.reset-btn{font-size:11px;color:var(--text2);background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;cursor:pointer;margin-top:8px;font-family:inherit}
+.action-btn{font-size:12px;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-family:inherit}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-overlay.open{display:block}
+.modal{background:var(--bg);border-radius:var(--radius-lg);margin:16px auto;max-width:740px;width:calc(100% - 24px);overflow:hidden}
+.modal-hdr{padding:14px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.modal-title{font-size:14px;font-weight:500;color:var(--text)}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--text2);line-height:1;padding:0 4px}
+.modal-body{padding:16px}
+.emg-card{border:1px solid var(--red);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:12px}
+.emg-title{font-size:14px;font-weight:500;color:var(--red);margin:0 0 10px}
+.empty-state{text-align:center;padding:28px 16px;color:var(--text2)}
+.empty-state p{font-size:13px;margin-top:6px}
+.log-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;background:var(--bg);flex-wrap:wrap;gap:6px}
+.log-btn{font-size:11px;padding:4px 8px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);cursor:pointer;color:var(--text2);font-family:inherit}
+.section-divider{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;padding:12px 0 6px;border-top:1px solid var(--border);margin-top:6px}
+.section-divider:first-child{border-top:none;padding-top:0}
+.edit-note{font-size:10px;color:var(--text3);margin-bottom:6px;padding:5px 8px;background:var(--bg2);border-radius:var(--radius)}
+.alert-banner{background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--red-text);display:none}
+.alert-banner.show{display:block}
+.week-tasks-box{background:var(--bg2);border-radius:var(--radius);padding:10px 12px;margin-bottom:12px}
+.week-tasks-title{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px}
+.week-task-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text);padding:3px 0}
+.week-task-item.done-task{color:var(--text3);text-decoration:line-through}
+.week-task-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+.week-task-dot.done-dot{background:var(--green)}
+.mood-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mood-cal-nav button{background:none;border:1px solid var(--border);border-radius:var(--radius);padding:5px 10px;cursor:pointer;font-family:inherit;font-size:12px;color:var(--text)}
+.mood-cal-month{font-size:13px;font-weight:500;color:var(--text)}
+.mood-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px}
+.cal-day-hdr{font-size:10px;font-weight:500;color:var(--text3);text-align:center;padding:4px 0}
+.cal-day{min-height:34px;border-radius:var(--radius);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;font-weight:500;color:var(--text3)}
+.cal-day.has-log{cursor:pointer}
+.cal-day.cal-today{border-color:var(--blue);color:var(--blue)}
+.cal-day.mood-good{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
+.cal-day.mood-mixed{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-text)}
+.cal-day.mood-hard{background:var(--red-bg);border-color:var(--red);color:var(--red-text)}
+.cal-day-num{font-size:11px;font-weight:600}
+.cal-day-type{font-size:8px;opacity:.8;margin-top:1px}
+.cal-legend{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cal-leg{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2)}
+.cal-leg-dot{width:10px;height:10px;border-radius:2px}
+.ref-log-item{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px}
+.ref-log-date{font-size:12px;font-weight:500;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ref-log-row{font-size:12px;color:var(--text2);padding:3px 0}
+.ref-log-row span{color:var(--text);font-weight:500}
+/* PROGRESS AREA COLORS */
+.fill-tech{background:var(--blue)}
+.fill-soft{background:var(--purple)}
+.fill-net{background:var(--amber)}
+.fill-app{background:var(--green)}
+.fill-gen{background:var(--gray-text)}
+/* EXIT WINDOW LINKS */
+.exit-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--border);background:var(--bg2);color:var(--text2);margin-top:4px}
+
+/* FILTER PILLS */
+.stage-pill,.area-pill,.plan-area-pill{font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid var(--border);background:var(--bg);color:var(--text2);cursor:pointer;font-family:inherit;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.stage-pill.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-text);font-weight:500}
+.area-pill.active{background:var(--bg2);border-color:var(--border2);color:var(--text);font-weight:500}
+.plan-area-pill.active{background:var(--bg2);border-color:var(--border2);color:var(--text);font-weight:500}
+.prog-row.hidden-row{display:none}
+/* CAT SELECTOR IN PLAN */
+.cat-select{font-size:10px;padding:1px 4px;border-radius:99px;border:1px solid var(--border);background:transparent;color:inherit;font-family:inherit;cursor:pointer;appearance:none;-webkit-appearance:none}
+.cat-select.cat-tech{background:var(--blue-bg);border-color:var(--blue);color:var(--blue-text)}
+.cat-select.cat-soft{background:var(--purple-bg);border-color:var(--purple);color:var(--purple-text)}
+.cat-select.cat-net{background:var(--amber-bg);border-color:var(--amber);color:var(--amber-text)}
+.cat-select.cat-app{background:var(--green-bg);border-color:var(--green);color:var(--green-text)}
+.cat-select.cat-gen{background:var(--gray-bg);border-color:var(--border2);color:var(--gray-text)}
+.plan-area-bar{height:3px;border-radius:99px;margin-bottom:8px;background:var(--bg2)}
+.plan-area-bar-fill{height:100%;border-radius:99px;transition:width .3s}
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="top-nav">
+  <div class="top-nav-inner">
+    <button class="nav-btn active" onclick="goTo('overview',this)">Overview</button>
+    <button class="nav-btn" onclick="goTo('schedule',this)">Schedule</button>
+    <button class="nav-btn" onclick="goTo('plan',this)">12-Week Plan</button>
+    <button class="nav-btn" onclick="goTo('mindset',this)">Mindset</button>
+    <button class="nav-btn" id="emergency-nav-btn" onclick="goTo('emergency',this)">Emergency</button>
+    <button class="nav-btn" onclick="openSyncSettings()" title="Sync settings" style="margin-left:auto">☁️ Sync</button>
+</div>
+</nav>
+<!-- SYNC STATUS BAR -->
+<div id="sync-bar" style="font-size:11px;color:var(--text3);text-align:center;padding:4px 8px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;gap:8px;min-height:24px">
+  <span id="sync-status-bar-text">Loading saved data…</span>
+</div>
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview">
+  <div class="grid4" style="margin-bottom:12px">
+    <div class="metric"><p class="metric-label">Days to Oct 31</p><div class="metric-val" id="oct-days">-</div><div class="metric-sub">exit window 1</div></div>
+    <div class="metric"><p class="metric-label">Days to Apr 15</p><div class="metric-val" id="apr-days">-</div><div class="metric-sub">exit window 2</div></div>
+    <div class="metric"><p class="metric-label">Week of <span id="week-start-label"></span></p><div class="metric-val" id="week-compliance-ov">—</div><div class="metric-sub">compliance</div></div>
+    <div class="metric"><p class="metric-label">Overall tasks</p><div class="metric-val" id="ov-progress">0%</div><div class="metric-sub" id="ov-task-count">0/0</div></div>
+  </div>
+  <div id="ov-alert" class="alert-banner">⚠️ Compliance below 60% this week. Check the Emergency tab.</div>
+  <div class="card">
+    <p class="card-title">Exit strategy</p>
+    <div style="margin-bottom:10px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:2px">Oct 31, 2026 — exit window 1</div>
+      <div style="font-size:12px;color:var(--text2)">Stages 1 & 2 — build foundation + active search</div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:10px">
+      <div style="font-size:13px;font-weight:500;margin-bottom:2px">Apr 15, 2027 — exit window 2</div>
+      <div style="font-size:12px;color:var(--text2)">Stages 1–4 — full cycle, bonus collected</div>
+    </div>
+  </div>
+  <div class="card">
+    <p class="card-title">12-week progress <span id="ov-plan-badge" class="badge b-gray">0/0</span></p>
+    <!-- Stage filter pills -->
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap" id="stage-filter-pills">
+      <button class="stage-pill active" data-stage="all" onclick="setPlanFilter('all',this)">All stages</button>
+      <button class="stage-pill" data-stage="0" onclick="setPlanFilter('0',this)">Pilot + Stage 1</button>
+      <button class="stage-pill" data-stage="1" onclick="setPlanFilter('1',this)">Stage 2</button>
+      <button class="stage-pill" data-stage="2" onclick="setPlanFilter('2',this)">Stage 3</button>
+      <button class="stage-pill" data-stage="3" onclick="setPlanFilter('3',this)">Stage 4</button>
+    </div>
+    <!-- Area filter pills -->
+    <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="area-filter-pills">
+      <button class="area-pill active" data-area="all" onclick="setAreaFilter('all',this)">All areas</button>
+      <button class="area-pill" data-area="tech" onclick="setAreaFilter('tech',this)"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></button>
+      <button class="area-pill" data-area="soft" onclick="setAreaFilter('soft',this)"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></button>
+      <button class="area-pill" data-area="net" onclick="setAreaFilter('net',this)"><span class="wk-cat cat-net" style="font-size:10px">Network</span></button>
+      <button class="area-pill" data-area="app" onclick="setAreaFilter('app',this)"><span class="wk-cat cat-app" style="font-size:10px">Application</span></button>
+      <button class="area-pill" data-area="gen" onclick="setAreaFilter('gen',this)"><span class="wk-cat cat-gen" style="font-size:10px">General</span></button>
+    </div>
+    <!-- Per-stage progress -->
+    <div id="stage-prog-rows">
+      <div class="prog-row stage-prog-row" id="srow-all" style="">
+        <span class="prog-label" style="font-size:11px;color:var(--text2)">All stages</span>
+        <div class="prog-wrap"><div class="prog-fill" id="bar-stage-all" style="width:0%;background:var(--blue)"></div></div>
+        <span class="prog-count" id="cnt-stage-all">0/0</span>
+      </div>
+      <div class="prog-row stage-prog-row" id="srow-0" style="display:none">
+        <span class="prog-label" style="font-size:11px;color:var(--blue-text)">Pilot + S1</span>
+        <div class="prog-wrap"><div class="prog-fill" id="bar-stage-0" style="width:0%;background:var(--blue)"></div></div>
+        <span class="prog-count" id="cnt-stage-0">0/0</span>
+      </div>
+      <div class="prog-row stage-prog-row" id="srow-1" style="display:none">
+        <span class="prog-label" style="font-size:11px;color:var(--green-text)">Stage 2</span>
+        <div class="prog-wrap"><div class="prog-fill" id="bar-stage-1" style="width:0%;background:var(--green)"></div></div>
+        <span class="prog-count" id="cnt-stage-1">0/0</span>
+      </div>
+      <div class="prog-row stage-prog-row" id="srow-2" style="display:none">
+        <span class="prog-label" style="font-size:11px;color:var(--amber-text)">Stage 3</span>
+        <div class="prog-wrap"><div class="prog-fill" id="bar-stage-2" style="width:0%;background:var(--amber)"></div></div>
+        <span class="prog-count" id="cnt-stage-2">0/0</span>
+      </div>
+      <div class="prog-row stage-prog-row" id="srow-3" style="display:none">
+        <span class="prog-label" style="font-size:11px;color:var(--purple-text)">Stage 4</span>
+        <div class="prog-wrap"><div class="prog-fill" id="bar-stage-3" style="width:0%;background:var(--purple)"></div></div>
+        <span class="prog-count" id="cnt-stage-3">0/0</span>
+      </div>
+    </div>
+    <div style="height:1px;background:var(--border);margin:8px 0"></div>
+    <!-- Area progress -->
+    <div class="prog-row">
+      <span class="prog-label" style="display:flex;align-items:center;gap:4px"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></span>
+      <div class="prog-wrap"><div class="prog-fill fill-tech" id="bar-tech" style="width:0%"></div></div>
+      <span class="prog-count" id="cnt-tech">0/0</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label" style="display:flex;align-items:center;gap:4px"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></span>
+      <div class="prog-wrap"><div class="prog-fill fill-soft" id="bar-soft" style="width:0%"></div></div>
+      <span class="prog-count" id="cnt-soft">0/0</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label" style="display:flex;align-items:center;gap:4px"><span class="wk-cat cat-net" style="font-size:10px">Network</span></span>
+      <div class="prog-wrap"><div class="prog-fill fill-net" id="bar-net" style="width:0%"></div></div>
+      <span class="prog-count" id="cnt-net">0/0</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label" style="display:flex;align-items:center;gap:4px"><span class="wk-cat cat-app" style="font-size:10px">Application</span></span>
+      <div class="prog-wrap"><div class="prog-fill fill-app" id="bar-app" style="width:0%"></div></div>
+      <span class="prog-count" id="cnt-app">0/0</span>
+    </div>
+    <div class="prog-row">
+      <span class="prog-label" style="display:flex;align-items:center;gap:4px"><span class="wk-cat cat-gen" style="font-size:10px">General</span></span>
+      <div class="prog-wrap"><div class="prog-fill fill-gen" id="bar-gen" style="width:0%"></div></div>
+      <span class="prog-count" id="cnt-gen">0/0</span>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text3)">Linked to 12-Week Plan. Use filters to view by stage or area.</div>
+  </div>
+</div>
+
+<!-- SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="tab-row">
+    <div class="tab active" onclick="goSchedTab('tracker',this)">Office tracker</div>
+    <div class="tab" onclick="goSchedTab('capture',this)">Daily capture</div>
+    <div class="tab" onclick="goSchedTab('compliance',this)">Compliance</div>
+    <div class="tab" onclick="goSchedTab('moodcal',this)">Mood calendar</div>
+    <div class="tab" onclick="goSchedTab('reflections',this)">Reflections</div>
+  </div>
+  <div class="iview active" id="iview-tracker">
+    <div class="week-tasks-box"><p class="week-tasks-title">This week's tasks</p><div id="week-tasks-content"><p style="font-size:12px;color:var(--text3)">Loading...</p></div></div>
+    <div class="card">
+      <p class="card-title">Office tracker — 60% target per month</p>
+      <div class="dot-legend">
+        <div class="dot-leg"><div class="dot-sw" style="background:var(--blue-bg);border:1px solid var(--blue)"></div>Office</div>
+        <div class="dot-leg"><div class="dot-sw" style="background:var(--green-bg);border:1px solid var(--green)"></div>WFH</div>
+        <div class="dot-leg"><div class="dot-sw" style="background:var(--amber-bg);border:1px solid var(--amber)"></div>Holiday</div>
+        <div class="dot-leg"><div class="dot-sw" style="background:var(--bg3);border:1px solid var(--border)"></div>Weekend</div>
+      </div>
+      <div class="mode-note"><b>Tap</b> to cycle: office → WFH → holiday → clear. <b>Shift+click</b> or <b>long-press</b> to toggle holiday. Holidays excluded. Target rounds up. <b>Tap any marked day</b> to log schedule.</div>
+      <div class="smry-row">
+        <div class="metric"><p class="metric-label">Office</p><div class="metric-val" id="total-office">0</div></div>
+        <div class="metric"><p class="metric-label">WFH</p><div class="metric-val" id="total-wfh">0</div></div>
+        <div class="metric"><p class="metric-label">Holidays</p><div class="metric-val" id="total-hol">0</div></div>
+        <div class="metric"><p class="metric-label">On track</p><div class="metric-val" id="months-on-track">0/0</div></div>
+      </div>
+      <div class="month-grid" id="month-grid"></div>
+    </div>
+  </div>
+  <div class="iview" id="iview-capture">
+    <div class="save-bar">
+      <input type="date" id="capture-date"/>
+      <select class="day-type-sel" id="capture-type" onchange="renderCaptureForm()">
+        <option value="office">Office day</option>
+        <option value="wfh">WFH day</option>
+        <option value="holiday">Holiday</option>
+      </select>
+      <button class="save-btn" onclick="saveCapture()">Save day</button>
+      <span style="font-size:11px;color:var(--green)" id="save-status"></span>
+    </div>
+    <div id="capture-form-area"></div>
+  </div>
+  <div class="iview" id="iview-compliance">
+    <div id="compliance-alert" class="alert-banner">⚠️ This week's compliance is below 60%. Open Emergency tab.</div>
+    <div class="card">
+      <p class="card-title">Compliance
+        <span style="display:flex;gap:5px;flex-wrap:wrap">
+          <button class="action-btn" style="font-size:11px;padding:4px 8px" onclick="buildCompliance('week')">This week</button>
+          <button class="action-btn" style="font-size:11px;padding:4px 8px" onclick="buildCompliance('month')">This month</button>
+          <button class="action-btn" style="font-size:11px;padding:4px 8px" onclick="buildCompliance('all')">All time</button>
+        </span>
+      </p>
+      <div id="compliance-output"><div class="empty-state"><div style="font-size:24px">📊</div><p>Save some daily captures first.</p></div></div>
+    </div>
+    <div class="card"><p class="card-title">Saved days</p><div id="saved-days-list"><div class="empty-state"><p>No days saved yet.</p></div></div></div>
+  </div>
+  <div class="iview" id="iview-moodcal">
+    <div class="card">
+      <p class="card-title">How was today — monthly view</p>
+      <div class="cal-legend">
+        <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--green-bg);border:1px solid var(--green)"></div>Good</div>
+        <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--amber-bg);border:1px solid var(--amber)"></div>Mixed</div>
+        <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--red-bg);border:1px solid var(--red)"></div>Hard</div>
+      </div>
+      <div class="mood-cal-nav">
+        <button onclick="moveMoodCal(-1)">&#8592;</button>
+        <span class="mood-cal-month" id="mood-cal-title"></span>
+        <button onclick="moveMoodCal(1)">&#8594;</button>
+      </div>
+      <div class="mood-cal-grid" id="mood-cal-grid"></div>
+    </div>
+  </div>
+  <div class="iview" id="iview-reflections">
+    <div class="card">
+      <p class="card-title">Daily reflections — chronological</p>
+      <div id="reflections-list"><div class="empty-state"><div style="font-size:24px">📝</div><p>No reflections saved yet.</p></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- 12-WEEK PLAN -->
+<div class="page" id="page-plan">
+  <div class="tab-row" id="plan-stage-tabs">
+    <div class="tab active" onclick="goPlanStage(0,this)">Pilot + Stage 1</div>
+    <div class="tab" onclick="goPlanStage(1,this)">Stage 2</div>
+    <div class="tab" onclick="goPlanStage(2,this)">Stage 3</div>
+    <div class="tab" onclick="goPlanStage(3,this)">Stage 4</div>
+  </div>
+
+  <!-- STAGE 0: PILOT + STAGE 1 -->
+  <div class="iview active" id="plan-stage-0">
+    <div class="stage-header stage-1-hdr">
+      <div>
+        <div class="stage-title">Pilot week + Stage 1 — Foundation</div>
+        <div class="stage-meta" style="color:var(--blue-text)">May 24 – Aug 17, 2026 · Exit window 1 (Stages 1 & 2)</div>
+        <div style="margin-top:4px"><span class="exit-link">🎯 Exit window 1: Oct 31, 2026</span></div>
+      </div>
+      <div class="stage-pct" id="spct-0" style="color:var(--blue-text)">0%</div>
+    </div>
+    <div class="plan-filter-bar" id="plan-filter-0" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text2);white-space:nowrap">Filter:</span>
+      <button class="plan-area-pill active" data-si="0" data-area="all" onclick="setPlanAreaFilter(0,'all',this)">All</button>
+      <button class="plan-area-pill" data-si="0" data-area="tech" onclick="setPlanAreaFilter(0,'tech',this)"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></button>
+      <button class="plan-area-pill" data-si="0" data-area="soft" onclick="setPlanAreaFilter(0,'soft',this)"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></button>
+      <button class="plan-area-pill" data-si="0" data-area="net" onclick="setPlanAreaFilter(0,'net',this)"><span class="wk-cat cat-net" style="font-size:10px">Network</span></button>
+      <button class="plan-area-pill" data-si="0" data-area="app" onclick="setPlanAreaFilter(0,'app',this)"><span class="wk-cat cat-app" style="font-size:10px">Application</span></button>
+      <button class="plan-area-pill" data-si="0" data-area="gen" onclick="setPlanAreaFilter(0,'gen',this)"><span class="wk-cat cat-gen" style="font-size:10px">General</span></button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="plan-filter-count-0"></span>
+    </div>
+    <div id="stage-0-weeks"></div>
+  </div>
+
+  <!-- STAGE 2 -->
+  <div class="iview" id="plan-stage-1">
+    <div class="stage-header stage-2-hdr">
+      <div>
+        <div class="stage-title">Stage 2 — Active Search</div>
+        <div class="stage-meta" style="color:#085041">Aug 24 – Nov 9, 2026 · Exit window 1 active</div>
+        <div style="margin-top:4px"><span class="exit-link">🎯 Exit window 1: Oct 31, 2026</span></div>
+      </div>
+      <div class="stage-pct" id="spct-1" style="color:#085041">0%</div>
+    </div>
+    <div class="plan-filter-bar" id="plan-filter-1" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text2);white-space:nowrap">Filter:</span>
+      <button class="plan-area-pill active" data-si="1" data-area="all" onclick="setPlanAreaFilter(1,'all',this)">All</button>
+      <button class="plan-area-pill" data-si="1" data-area="tech" onclick="setPlanAreaFilter(1,'tech',this)"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></button>
+      <button class="plan-area-pill" data-si="1" data-area="soft" onclick="setPlanAreaFilter(1,'soft',this)"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></button>
+      <button class="plan-area-pill" data-si="1" data-area="net" onclick="setPlanAreaFilter(1,'net',this)"><span class="wk-cat cat-net" style="font-size:10px">Network</span></button>
+      <button class="plan-area-pill" data-si="1" data-area="app" onclick="setPlanAreaFilter(1,'app',this)"><span class="wk-cat cat-app" style="font-size:10px">Application</span></button>
+      <button class="plan-area-pill" data-si="1" data-area="gen" onclick="setPlanAreaFilter(1,'gen',this)"><span class="wk-cat cat-gen" style="font-size:10px">General</span></button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="plan-filter-count-1"></span>
+    </div>
+    <div id="stage-1-weeks"></div>
+  </div>
+
+  <!-- STAGE 3 -->
+  <div class="iview" id="plan-stage-2">
+    <div class="stage-header stage-3-hdr">
+      <div>
+        <div class="stage-title">Stage 3 — Consolidate & Deepen</div>
+        <div class="stage-meta" style="color:var(--amber-text)">Nov 16, 2026 – Feb 1, 2027 · Exit window 2 prep</div>
+        <div style="margin-top:4px"><span class="exit-link">🏁 Exit window 2: Apr 15, 2027</span></div>
+      </div>
+      <div class="stage-pct" id="spct-2" style="color:var(--amber-text)">0%</div>
+    </div>
+    <div class="plan-filter-bar" id="plan-filter-2" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text2);white-space:nowrap">Filter:</span>
+      <button class="plan-area-pill active" data-si="2" data-area="all" onclick="setPlanAreaFilter(2,'all',this)">All</button>
+      <button class="plan-area-pill" data-si="2" data-area="tech" onclick="setPlanAreaFilter(2,'tech',this)"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></button>
+      <button class="plan-area-pill" data-si="2" data-area="soft" onclick="setPlanAreaFilter(2,'soft',this)"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></button>
+      <button class="plan-area-pill" data-si="2" data-area="net" onclick="setPlanAreaFilter(2,'net',this)"><span class="wk-cat cat-net" style="font-size:10px">Network</span></button>
+      <button class="plan-area-pill" data-si="2" data-area="app" onclick="setPlanAreaFilter(2,'app',this)"><span class="wk-cat cat-app" style="font-size:10px">Application</span></button>
+      <button class="plan-area-pill" data-si="2" data-area="gen" onclick="setPlanAreaFilter(2,'gen',this)"><span class="wk-cat cat-gen" style="font-size:10px">General</span></button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="plan-filter-count-2"></span>
+    </div>
+    <div id="stage-2-weeks"></div>
+  </div>
+
+  <!-- STAGE 4 -->
+  <div class="iview" id="plan-stage-3">
+    <div class="stage-header stage-4-hdr">
+      <div>
+        <div class="stage-title">Stage 4 — Execute & Exit</div>
+        <div class="stage-meta" style="color:var(--purple-text)">Feb 8 – Apr 26, 2027 · Exit window 2 active</div>
+        <div style="margin-top:4px"><span class="exit-link">🏁 Exit window 2: Apr 15, 2027</span></div>
+      </div>
+      <div class="stage-pct" id="spct-3" style="color:var(--purple-text)">0%</div>
+    </div>
+    <div class="plan-filter-bar" id="plan-filter-3" style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+      <span style="font-size:11px;color:var(--text2);white-space:nowrap">Filter:</span>
+      <button class="plan-area-pill active" data-si="3" data-area="all" onclick="setPlanAreaFilter(3,'all',this)">All</button>
+      <button class="plan-area-pill" data-si="3" data-area="tech" onclick="setPlanAreaFilter(3,'tech',this)"><span class="wk-cat cat-tech" style="font-size:10px">Tech</span></button>
+      <button class="plan-area-pill" data-si="3" data-area="soft" onclick="setPlanAreaFilter(3,'soft',this)"><span class="wk-cat cat-soft" style="font-size:10px">Soft skills</span></button>
+      <button class="plan-area-pill" data-si="3" data-area="net" onclick="setPlanAreaFilter(3,'net',this)"><span class="wk-cat cat-net" style="font-size:10px">Network</span></button>
+      <button class="plan-area-pill" data-si="3" data-area="app" onclick="setPlanAreaFilter(3,'app',this)"><span class="wk-cat cat-app" style="font-size:10px">Application</span></button>
+      <button class="plan-area-pill" data-si="3" data-area="gen" onclick="setPlanAreaFilter(3,'gen',this)"><span class="wk-cat cat-gen" style="font-size:10px">General</span></button>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="plan-filter-count-3"></span>
+    </div>
+    <div id="stage-3-weeks"></div>
+  </div>
+</div>
+
+<!-- MINDSET -->
+<div class="page" id="page-mindset">
+  <div class="card"><p class="card-title">Daily reframes</p>
+    <div class="reframe-box"><p class="reframe-text">"I am a professional in transition. This job is a temporary platform — not my identity."</p></div>
+    <div class="reframe-box"><p class="reframe-text">"Her criticism is information about her management style. It is not a verdict on my worth."</p></div>
+    <div class="reframe-box"><p class="reframe-text">"I am not trying to win their approval anymore. I am playing a different game entirely."</p></div>
+    <div class="reframe-box"><p class="reframe-text">"The market's opinion of me is the only one that matters. And the market wants what I have."</p></div>
+    <div class="reframe-box"><p class="reframe-text">"I am not on a sinking ship. I am on a ship I am about to leave — on my own terms."</p></div>
+  </div>
+  <div class="card"><p class="card-title">Anxiety check</p>
+    <div class="mindset-q">Is this happening now or am I anticipating?<div class="mindset-sub">Most anxiety lives in the future — not this moment</div></div>
+    <div class="mindset-q">What is my actual evidence this will go wrong?<div class="mindset-sub">Anxiety is a story — check the facts</div></div>
+    <div class="mindset-q">Would a colleague in a healthy workplace worry about this?<div class="mindset-sub">If no — it's the environment, not reality</div></div>
+    <div class="mindset-q">What's the smallest physical thing I can do right now?<div class="mindset-sub">Stand up, get water, walk to the window</div></div>
+  </div>
+  <div class="card"><p class="card-title">Crispness practices</p>
+    <div class="mindset-q">Respond to low stakes emails within 5 minutes<div class="mindset-sub">Trust your first instinct. Overthinking is anxiety, not intelligence.</div></div>
+    <div class="mindset-q">Headphones on = focus mode — 2 blocks per day<div class="mindset-sub">I am unavailable right now</div></div>
+    <div class="mindset-q">Ask "what do I think?" before wondering what anyone else thinks<div class="mindset-sub">Your internal voice needs to be louder than hers</div></div>
+    <div class="mindset-q">Gray rock difficult interactions<div class="mindset-sub">Short, neutral, no emotional reaction. Bland is protection.</div></div>
+  </div>
+</div>
+
+<!-- EMERGENCY -->
+<div class="page" id="page-emergency">
+  <div class="emg-card">
+    <p class="emg-title">Emergency reset</p>
+    <ul class="q-list" id="emg-q">
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Stop. Close the laptop or put the phone down.<div class="q-sub">Right now. Everything else waits.</div></div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Name what happened — one sentence only</div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Is this happening now or am I anticipating?</div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Her opinion is not the verdict<div class="q-sub">"Her assessment of me is not the market's assessment of me."</div></div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Do the smallest possible physical thing<div class="q-sub">Stand up. Get water. Walk to the window.</div></div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Remember where you are in the plan<div class="q-sub">Temporary platform. April is coming. Already in motion.</div></div></li>
+      <li class="q-item" onclick="togQ(this)"><div class="q-check"><svg width="12" height="12" viewBox="0 0 12 12" style="display:none"><polyline points="1,6 5,10 11,2" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div class="q-text">Give today just one job — get through it adequately<div class="q-sub">Not fixing everything. Just today.</div></div></li>
+    </ul>
+    <button class="reset-btn" onclick="resetList('emg-q')">Reset</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="schedule-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title" id="modal-title">Schedule</span><button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- SYNC SETTINGS MODAL -->
+<div class="modal-overlay" id="sync-modal" onclick="if(event.target===this)closeSyncModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-hdr">
+      <span class="modal-title">☁️ Sync settings</span>
+      <button class="modal-close" onclick="closeSyncModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Your data is always saved locally on this device. To sync across devices (phone + laptop), connect a free <a href="https://jsonbin.io" target="_blank" style="color:var(--blue)">JSONBin.io</a> account.</p>
+      <div style="background:var(--bg2);border-radius:var(--radius);padding:12px;margin-bottom:14px;font-size:12px;color:var(--text2);line-height:1.8">
+        <strong style="color:var(--text)">Setup (2 minutes):</strong><br>
+        1. Go to <strong>jsonbin.io</strong> → Sign up free<br>
+        2. Click <strong>API Keys</strong> → Create a Master Key<br>
+        3. Paste it below → tap Save → tap Push to cloud<br>
+        4. On second device: enter same API key + paste the Bin ID
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Master API Key</label>
+        <input type="password" id="sync-api-input" placeholder="$2a$10$..." style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
+      </div>
+      <div style="margin-bottom:10px">
+        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Bin ID <span style="font-weight:400">(auto-filled after first save; copy to second device)</span></label>
+        <input type="text" id="sync-bin-input" placeholder="auto-filled after first push" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
+        <div id="bin-id-display" style="margin-top:6px;font-size:11px;color:var(--text3)"></div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label style="font-size:11px;font-weight:500;color:var(--text2);display:block;margin-bottom:4px">Label <span style="font-weight:400">(optional nickname)</span></label>
+        <input type="text" id="sync-key-input" placeholder="my-escape-plan" style="width:100%;font-size:13px;padding:8px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;box-sizing:border-box"/>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+        <button class="save-btn" onclick="saveSyncSettings()">Save settings</button>
+        <button class="action-btn" onclick="forcePush()">Push to cloud ↑</button>
+        <button class="action-btn" onclick="forcePull()">Pull from cloud ↓</button>
+      </div>
+      <div id="sync-status-text" style="font-size:12px;color:var(--green);min-height:18px"></div>
+      <div style="margin-top:12px;padding:10px;background:var(--blue-bg);border-radius:var(--radius);font-size:11px;color:var(--blue-text);line-height:1.6">
+        <strong>Always saved locally first</strong> — cloud sync is optional. Without an API key, everything saves automatically to this device via localStorage and persists between sessions.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+<script>
+// Global error handler — catches silent crashes on mobile
+window.onerror=function(msg,src,line,col,err){
+  const bar=document.getElementById('sync-status-bar-text');
+  if(bar)bar.textContent='⚠️ Error: '+msg+' (line '+line+')';
+  return false;
+};
+window.addEventListener('unhandledrejection',function(e){
+  const bar=document.getElementById('sync-status-bar-text');
+  if(bar)bar.textContent='⚠️ '+String(e.reason);
+});
+// ─── HELPERS ──────────────────────────────────────────────────────────
+function dk(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function todayStr(){return dk(new Date())}
+function getWeekMon(d){const day=d.getDay();const mon=new Date(d);mon.setDate(d.getDate()-(day===0?6:day-1));mon.setHours(0,0,0,0);return mon;}
+function getWeekKeys(){
+  const mon=getWeekMon(new Date());const sun=new Date(mon);sun.setDate(mon.getDate()+6);sun.setHours(23,59,59,999);
+  return Object.keys(savedLogs).filter(k=>{const d=new Date(k+'T12:00:00');return d>=mon&&d<=sun;});
+}
+function gwd(y,m){const d=[];const x=new Date(y,m,1);while(x.getMonth()===m){if(x.getDay()!==0&&x.getDay()!==6)d.push(new Date(x));x.setDate(x.getDate()+1);}return d;}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function fmtDate(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function fmtShort(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+
+// ─── 4-STAGE PLAN DATA ────────────────────────────────────────────────
+// cat: tech | soft | net | app | gen
+// Each stage = 12 weeks, each week has editable tasks
+const STAGE_DEFS=[
+  // Stage 0 = Pilot + Stage 1: May 24 – Aug 17 2026
+  {label:'Pilot + Stage 1',color:'--blue-text',exitWindow:1,start:new Date('2026-05-24'),
+    weeks:[
+      {label:'Pilot — May 24',tasks:[{t:'Resume file opened and reviewed',cat:'tech',done:false},{t:'First Python task attempted',cat:'tech',done:false},{t:'Daily check-in routine tested',cat:'soft',done:false},{t:'Hard stop honored at least once',cat:'soft',done:false},{t:'Workout / movement done',cat:'soft',done:false}]},
+      {label:'Week 1 — Jun 1',tasks:[{t:'Resume with accomplishment language',cat:'tech',done:false},{t:'LinkedIn keywords optimized',cat:'net',done:false},{t:'First Python task completed',cat:'tech',done:false}]},
+      {label:'Week 2 — Jun 8',tasks:[{t:'20 target companies built + visa filtered',cat:'net',done:false},{t:'Second Python task done',cat:'tech',done:false},{t:'R-to-Python translation started',cat:'tech',done:false}]},
+      {label:'Week 3 — Jun 15',tasks:[{t:'5 LinkedIn connections identified',cat:'net',done:false},{t:'Break fully honored Jun 17–23',cat:'soft',done:false}]},
+      {label:'Week 4 — Jun 22',tasks:[{t:'3 connection requests sent',cat:'net',done:false},{t:'First informational interview requested',cat:'net',done:false},{t:'Jupyter notebook workflow set up',cat:'tech',done:false}]},
+      {label:'Week 5 — Jun 29',tasks:[{t:'First informational interview done',cat:'net',done:false},{t:'Notes captured on culture + visa',cat:'net',done:false},{t:'Statsmodels analysis completed',cat:'tech',done:false}]},
+      {label:'Week 6 — Jul 6',tasks:[{t:'3 interview stories written',cat:'soft',done:false},{t:'Second informational interview done',cat:'net',done:false},{t:'LinkedIn post drafted',cat:'net',done:false}]},
+      {label:'Week 7 — Jul 13',tasks:[{t:'Portfolio project started',cat:'tech',done:false},{t:'Third informational interview done',cat:'net',done:false},{t:'Resume refined',cat:'tech',done:false}]},
+      {label:'Week 8 — Jul 20',tasks:[{t:'10 meaningful connections reached',cat:'net',done:false},{t:'Portfolio progressing',cat:'tech',done:false},{t:'Stories practiced out loud',cat:'soft',done:false}]},
+      {label:'Week 9 — Jul 27',tasks:[{t:'Cover letter template written',cat:'app',done:false},{t:'Top 10 companies prioritized',cat:'net',done:false},{t:'Portfolio complete',cat:'tech',done:false}]},
+      {label:'Week 10 — Aug 3',tasks:[{t:'First 3 applications submitted',cat:'app',done:false},{t:'Application tracker started',cat:'app',done:false},{t:'Mock interview answers practiced',cat:'soft',done:false}]},
+      {label:'Week 11 — Aug 10',tasks:[{t:'5 total applications out',cat:'app',done:false},{t:'Responses followed up promptly',cat:'app',done:false},{t:'Network leveraged for introductions',cat:'net',done:false}]},
+      {label:'Week 12 — Aug 17',tasks:[{t:'Pipeline honestly assessed',cat:'app',done:false},{t:'Oct exit decision made with clear criteria',cat:'gen',done:false},{t:'Celebrate Stage 1 completion',cat:'soft',done:false}]},
+    ]
+  },
+  // Stage 2: Aug 24 – Nov 9 2026
+  {label:'Stage 2',color:'--green-text',exitWindow:1,start:new Date('2026-08-24'),
+    weeks:[
+      {label:'Week 1 — Aug 24',tasks:[{t:'Active applications — 3 new this week',cat:'app',done:false},{t:'Follow up all open applications',cat:'app',done:false},{t:'Python portfolio shared on LinkedIn',cat:'net',done:false}]},
+      {label:'Week 2 — Aug 31',tasks:[{t:'First interview scheduled',cat:'app',done:false},{t:'STAR story library built (10+ stories)',cat:'soft',done:false},{t:'Research visa transfer process',cat:'gen',done:false}]},
+      {label:'Week 3 — Sep 7',tasks:[{t:'5 new applications this week',cat:'app',done:false},{t:'Mock interview with a friend or mentor',cat:'soft',done:false},{t:'Negotiate salary benchmarks researched',cat:'app',done:false}]},
+      {label:'Week 4 — Sep 14',tasks:[{t:'Active pipeline — 10+ applications',cat:'app',done:false},{t:'RWE / HEOR specific prep done',cat:'tech',done:false},{t:'References identified and briefed',cat:'net',done:false}]},
+      {label:'Week 5 — Sep 21',tasks:[{t:'Interview debrief process established',cat:'soft',done:false},{t:'Any offers evaluated carefully',cat:'app',done:false},{t:'Network warm intros used this week',cat:'net',done:false}]},
+      {label:'Week 6 — Sep 28',tasks:[{t:'Pipeline at 15+ applications',cat:'app',done:false},{t:'Weekly review: what\'s working?',cat:'soft',done:false},{t:'Python skills tested in new context',cat:'tech',done:false}]},
+      {label:'Week 7 — Oct 5',tasks:[{t:'Oct 31 exit decision reviewed',cat:'gen',done:false},{t:'Any promising leads accelerated',cat:'app',done:false},{t:'Compensation negotiation prep',cat:'soft',done:false}]},
+      {label:'Week 8 — Oct 12',tasks:[{t:'Final push before Oct 31 window',cat:'app',done:false},{t:'Any offers negotiated and evaluated',cat:'app',done:false},{t:'Visa transfer process confirmed',cat:'gen',done:false}]},
+      {label:'Week 9 — Oct 19',tasks:[{t:'Oct 31 decision: take exceptional offer or wait',cat:'gen',done:false},{t:'Thank you notes sent after all interviews',cat:'soft',done:false},{t:'Relationships maintained regardless of outcome',cat:'net',done:false}]},
+      {label:'Week 10 — Oct 26',tasks:[{t:'If staying: bonus plan locked in',cat:'gen',done:false},{t:'If leaving: transition plan clear',cat:'gen',done:false},{t:'Network updated on status',cat:'net',done:false}]},
+      {label:'Week 11 — Nov 2',tasks:[{t:'Stage 2 pipeline reviewed',cat:'app',done:false},{t:'Lessons learned documented',cat:'soft',done:false},{t:'Reframe for Stage 3 if continuing',cat:'soft',done:false}]},
+      {label:'Week 12 — Nov 9',tasks:[{t:'Stage 2 complete — full assessment',cat:'gen',done:false},{t:'Skills gap identified for Stage 3',cat:'tech',done:false},{t:'Celebrate progress — you\'ve done this',cat:'soft',done:false}]},
+    ]
+  },
+  // Stage 3: Nov 16 2026 – Feb 1 2027
+  {label:'Stage 3',color:'--amber-text',exitWindow:2,start:new Date('2026-11-16'),
+    weeks:[
+      {label:'Week 1 — Nov 16',tasks:[{t:'Python portfolio v2 planned',cat:'tech',done:false},{t:'RWE deep-dive: new methodology learned',cat:'tech',done:false},{t:'LinkedIn refreshed for Stage 3 push',cat:'net',done:false}]},
+      {label:'Week 2 — Nov 23',tasks:[{t:'New network connections in target roles',cat:'net',done:false},{t:'Blog post or LinkedIn article drafted',cat:'soft',done:false},{t:'Application process refined from Stage 2 lessons',cat:'app',done:false}]},
+      {label:'Week 3 — Nov 30',tasks:[{t:'Python project v2 in progress',cat:'tech',done:false},{t:'3 new informational interviews',cat:'net',done:false},{t:'Updated resume for Stage 3 roles',cat:'tech',done:false}]},
+      {label:'Week 4 — Dec 7',tasks:[{t:'Upskill: cloud / AWS health completed',cat:'tech',done:false},{t:'Published content piece (LinkedIn / blog)',cat:'soft',done:false},{t:'10 new connections this month',cat:'net',done:false}]},
+      {label:'Week 5 — Dec 14',tasks:[{t:'Holiday networking: reach out to warm contacts',cat:'net',done:false},{t:'Reflection: energy and wellbeing check',cat:'soft',done:false},{t:'Q1 2027 target list updated',cat:'app',done:false}]},
+      {label:'Week 6 — Dec 21',tasks:[{t:'Holiday break — rest and recharge',cat:'soft',done:false},{t:'Light reading: industry trends / RWE updates',cat:'tech',done:false}]},
+      {label:'Week 7 — Dec 28',tasks:[{t:'2026 year review: wins and lessons',cat:'soft',done:false},{t:'2027 goals set — specific and measurable',cat:'gen',done:false},{t:'Resume final polish for Jan push',cat:'tech',done:false}]},
+      {label:'Week 8 — Jan 4',tasks:[{t:'Jan hiring season: 5 applications',cat:'app',done:false},{t:'Re-engage stalled contacts from Stage 2',cat:'net',done:false},{t:'Salary negotiation script refined',cat:'soft',done:false}]},
+      {label:'Week 9 — Jan 11',tasks:[{t:'Active pipeline: 10+ applications',cat:'app',done:false},{t:'Technical interview prep: stats / R / Python',cat:'tech',done:false},{t:'Warm intros from network',cat:'net',done:false}]},
+      {label:'Week 10 — Jan 18',tasks:[{t:'15+ applications active',cat:'app',done:false},{t:'Interview debrief and adjust',cat:'soft',done:false},{t:'Any strong leads prioritized',cat:'app',done:false}]},
+      {label:'Week 11 — Jan 25',tasks:[{t:'Feb 1 checkpoint: on track for April?',cat:'gen',done:false},{t:'Bonus confirmation date checked',cat:'gen',done:false},{t:'Final Stage 3 assessment',cat:'gen',done:false}]},
+      {label:'Week 12 — Feb 1',tasks:[{t:'Stage 3 complete — pipeline strong',cat:'app',done:false},{t:'Network now 30+ meaningful connections',cat:'net',done:false},{t:'Stage 4 plan confirmed',cat:'gen',done:false}]},
+    ]
+  },
+  // Stage 4: Feb 8 – Apr 26 2027
+  {label:'Stage 4',color:'--purple-text',exitWindow:2,start:new Date('2027-02-08'),
+    weeks:[
+      {label:'Week 1 — Feb 8',tasks:[{t:'Final active push — 5 applications',cat:'app',done:false},{t:'All warm leads followed up',cat:'net',done:false},{t:'Bonus collection date confirmed',cat:'gen',done:false}]},
+      {label:'Week 2 — Feb 15',tasks:[{t:'Interview pipeline active',cat:'app',done:false},{t:'Offer evaluation framework ready',cat:'soft',done:false},{t:'Visa transfer logistics confirmed',cat:'gen',done:false}]},
+      {label:'Week 3 — Feb 22',tasks:[{t:'At least 1 final-stage interview',cat:'app',done:false},{t:'Negotiation prep complete',cat:'soft',done:false},{t:'References warm and briefed',cat:'net',done:false}]},
+      {label:'Week 4 — Mar 1',tasks:[{t:'Any offers evaluated: culture, role, visa',cat:'app',done:false},{t:'Counter-offer strategy ready',cat:'soft',done:false},{t:'Bonus received or date confirmed',cat:'gen',done:false}]},
+      {label:'Week 5 — Mar 8',tasks:[{t:'Offer accepted or continue search',cat:'app',done:false},{t:'Collect March bonus if applicable',cat:'gen',done:false},{t:'Notice period plan ready',cat:'gen',done:false}]},
+      {label:'Week 6 — Mar 15',tasks:[{t:'Notice given (if offer accepted)',cat:'gen',done:false},{t:'Transition plan at current job',cat:'soft',done:false},{t:'New role start logistics confirmed',cat:'gen',done:false}]},
+      {label:'Week 7 — Mar 22',tasks:[{t:'Knowledge handover at current job',cat:'soft',done:false},{t:'Thank you notes and relationship maintenance',cat:'net',done:false},{t:'New role preparation begins',cat:'tech',done:false}]},
+      {label:'Week 8 — Mar 29',tasks:[{t:'Final days at current job',cat:'gen',done:false},{t:'Celebrate leaving with dignity',cat:'soft',done:false},{t:'Rest before starting new role',cat:'soft',done:false}]},
+      {label:'Week 9 — Apr 7',tasks:[{t:'New role: first week',cat:'tech',done:false},{t:'Build relationships with new team',cat:'net',done:false},{t:'Identify early wins',cat:'soft',done:false}]},
+      {label:'Week 10 — Apr 14',tasks:[{t:'Apr 15 exit window confirmed',cat:'gen',done:false},{t:'New role: 30-day plan',cat:'tech',done:false},{t:'Reflect on the full journey',cat:'soft',done:false}]},
+      {label:'Week 11 — Apr 21',tasks:[{t:'New role progressing well',cat:'tech',done:false},{t:'Maintain network — don\'t disappear',cat:'net',done:false},{t:'Continue Python and technical growth',cat:'tech',done:false}]},
+      {label:'Week 12 — Apr 28',tasks:[{t:'Mission complete — you did it',cat:'gen',done:false},{t:'Document lessons learned',cat:'soft',done:false},{t:'Celebrate fully and rest',cat:'soft',done:false}]},
+    ]
+  },
+];
+
+// ─── PLAN STATE ───────────────────────────────────────────────────────
+let planState=[];// [{done,label,cat}] flat — indexed by stageIdx, weekIdx, taskIdx
+let planAreaFilter={0:'all',1:'all',2:'all',3:'all'};// area filter per stage
+// stateKey: "s{si}w{wi}t{ti}"
+function planKey(si,wi,ti){return 's'+si+'w'+wi+'t'+ti;}
+let planTaskLabels={};// override edited labels
+function getPlanLabel(si,wi,ti){const k=planKey(si,wi,ti);return planTaskLabels[k]!==undefined?planTaskLabels[k]:STAGE_DEFS[si].weeks[wi].tasks[ti].t;}
+function isPlanDone(si,wi,ti){const k=planKey(si,wi,ti);return planState[k]||false;}
+
+// ─── BUILD PLAN UI ────────────────────────────────────────────────────
+const CAT_LABELS={tech:'Tech',soft:'Soft skills',net:'Network',app:'Application',gen:'General'};
+const CAT_CSS={tech:'cat-tech',soft:'cat-soft',net:'cat-net',app:'cat-app',gen:'cat-gen'};
+
+function deletePlanTask(si,wi,ti){
+  STAGE_DEFS[si].weeks[wi].tasks.splice(ti,1);
+  // Remove any stored state for tasks after the deleted one (shift down)
+  const stage=STAGE_DEFS[si];
+  const week=stage.weeks[wi];
+  // Re-index planState for this week (tasks after ti shift down by 1)
+  for(let i=ti;i<week.tasks.length;i++){
+    const oldKey=planKey(si,wi,i+1);const newKey=planKey(si,wi,i);
+    planState[newKey]=planState[oldKey]||false;
+    planTaskLabels[newKey]=planTaskLabels[oldKey]||undefined;
+  }
+  // Clear last slot
+  delete planState[planKey(si,wi,week.tasks.length)];
+  delete planTaskLabels[planKey(si,wi,week.tasks.length)];
+  buildPlanStage(si);syncPlanToOverview();
+}
+
+function setPlanAreaFilter(si,area,btn){
+  planAreaFilter[si]=area;
+  const bar=document.getElementById('plan-filter-'+si);
+  if(bar)bar.querySelectorAll('.plan-area-pill').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  buildPlanStage(si);
+}
+
+function changePlanTaskCat(si,wi,ti,newCat){
+  STAGE_DEFS[si].weeks[wi].tasks[ti].cat=newCat;
+  // update select style
+  const sel=document.querySelector(`.cat-select[data-key="${planKey(si,wi,ti)}"]`);
+  if(sel){sel.className='cat-select '+(CAT_CSS[newCat]||'cat-gen');}
+  syncPlanToOverview();
+}
+
+function buildPlanStage(si){
+  const stage=STAGE_DEFS[si];
+  const containerId='stage-'+si+'-weeks';
+  const el=document.getElementById(containerId);if(!el)return;
+  const areaF=planAreaFilter[si]||'all';
+  let html='';let shownTasks=0;let totalTasks=0;
+  stage.weeks.forEach((week,wi)=>{
+    // Count tasks matching filter
+    const matchingTasks=week.tasks.filter((t,ti)=>areaF==='all'||t.cat===areaF);
+    if(matchingTasks.length===0&&areaF!=='all')return;// skip week if no matching tasks
+    const total=week.tasks.length;
+    const done=week.tasks.filter((_,ti)=>isPlanDone(si,wi,ti)).length;
+    totalTasks+=matchingTasks.length;
+    html+=`<div class="week-card">
+      <div class="week-hdr">
+        <span class="week-title">${week.label}</span>
+        <span style="font-size:11px;color:var(--text3)">${done}/${total}</span>
+      </div>`;
+    week.tasks.forEach((task,ti)=>{
+      // Hide tasks that don't match filter
+      if(areaF!=='all'&&task.cat!==areaF)return;
+      shownTasks++;
+      const k=planKey(si,wi,ti);const isDone=isPlanDone(si,wi,ti);const label=getPlanLabel(si,wi,ti);
+      const catCls=CAT_CSS[task.cat]||'cat-gen';
+      html+=`<div class="wk-row">
+        <input type="checkbox" class="wk-cb" ${isDone?'checked':''} onchange="togglePlanTask(${si},${wi},${ti},this)"/>
+        <input type="text" class="wk-label ${isDone?'done-text':''}" value="${label.replace(/"/g,'&quot;')}" onchange="editPlanLabel(${si},${wi},${ti},this.value)"/>
+        <select class="cat-select ${catCls}" data-key="${k}" onchange="changePlanTaskCat(${si},${wi},${ti},this.value);this.className='cat-select '+(CAT_CSS[this.value]||'cat-gen')">
+          <option value="tech" ${task.cat==='tech'?'selected':''}>Tech</option>
+          <option value="soft" ${task.cat==='soft'?'selected':''}>Soft</option>
+          <option value="net" ${task.cat==='net'?'selected':''}>Network</option>
+          <option value="app" ${task.cat==='app'?'selected':''}>App</option>
+          <option value="gen" ${task.cat==='gen'?'selected':''}>General</option>
+        </select>
+        <button class="wk-del" onclick="deletePlanTask(${si},${wi},${ti})" title="Delete task">×</button>
+      </div>`;
+    });
+    html+=`<button class="add-task-btn" onclick="addPlanTask(${si},${wi})">+ Add task</button>`;
+    html+=`</div>`;
+  });
+  if(areaF!=='all'&&shownTasks===0){
+    html=`<div style="text-align:center;padding:24px 16px;color:var(--text3);font-size:13px">No ${CAT_LABELS[areaF]||areaF} tasks in this stage yet.<br><span style="font-size:11px">Add tasks using the + button, then set their category.</span></div>`;
+  }
+  el.innerHTML=html;
+  // Update filter count label
+  const countEl=document.getElementById('plan-filter-count-'+si);
+  if(countEl&&areaF!=='all')countEl.textContent=shownTasks+' tasks';else if(countEl)countEl.textContent='';
+}
+
+function buildAllPlanStages(){
+  STAGE_DEFS.forEach((_,si)=>buildPlanStage(si));
+  syncPlanToOverview();
+  renderThisWeekTasks();
+}
+
+function togglePlanTask(si,wi,ti,cb){
+  const k=planKey(si,wi,ti);planState[k]=cb.checked;
+  // update label style
+  const row=cb.parentElement;const lbl=row.querySelector('.wk-label');if(lbl)lbl.classList.toggle('done-text',cb.checked);
+  syncPlanToOverview();renderThisWeekTasks();updateStagePct(si);
+}
+
+function editPlanLabel(si,wi,ti,val){
+  const k=planKey(si,wi,ti);planTaskLabels[k]=val;
+}
+
+function addPlanTask(si,wi){
+  // Use current area filter as default cat, fallback to gen
+  const areaF=planAreaFilter[si]||'all';
+  const defaultCat=(areaF!=='all'&&['tech','soft','net','app','gen'].includes(areaF))?areaF:'gen';
+  STAGE_DEFS[si].weeks[wi].tasks.push({t:'New task — tap to edit',cat:defaultCat,done:false});
+  // If filter active and new task matches, it will show; otherwise switch to all
+  buildPlanStage(si);syncPlanToOverview();
+  // Focus the last added task label
+  setTimeout(()=>{
+    const el=document.getElementById('stage-'+si+'-weeks');
+    if(!el)return;
+    const labels=el.querySelectorAll('.wk-label');
+    if(labels.length)labels[labels.length-1].focus();
+  },50);
+}
+
+function updateStagePct(si){
+  const stage=STAGE_DEFS[si];let total=0,done=0;
+  stage.weeks.forEach((week,wi)=>{week.tasks.forEach((_,ti)=>{total++;if(isPlanDone(si,wi,ti))done++;});});
+  const pct=total>0?Math.round(done/total*100):0;
+  const el=document.getElementById('spct-'+si);if(el)el.textContent=pct+'%';
+}
+
+// ─── PLAN SYNC TO OVERVIEW ────────────────────────────────────────────
+let activePlanStageFilter='all';
+let activeAreaFilter='all';
+
+function setPlanFilter(stage,btn){
+  activePlanStageFilter=stage;
+  document.querySelectorAll('.stage-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  syncPlanToOverview();
+}
+function setAreaFilter(area,btn){
+  activeAreaFilter=area;
+  document.querySelectorAll('.area-pill').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  syncPlanToOverview();
+}
+
+function syncPlanToOverview(){
+  // Always update all stage percentages (unfiltered)
+  STAGE_DEFS.forEach((_,si)=>updateStagePct(si));
+
+  // Filter tasks by active stage + area
+  let total=0,totalDone=0;
+  const cats={tech:{t:0,d:0},soft:{t:0,d:0},net:{t:0,d:0},app:{t:0,d:0},gen:{t:0,d:0}};
+  STAGE_DEFS.forEach((stage,si)=>{
+    if(activePlanStageFilter!=='all'&&String(si)!==activePlanStageFilter)return;
+    stage.weeks.forEach((week,wi)=>{
+      week.tasks.forEach((task,ti)=>{
+        if(activeAreaFilter!=='all'&&task.cat!==activeAreaFilter)return;
+        total++;const done=isPlanDone(si,wi,ti);if(done)totalDone++;
+        const c=cats[task.cat];if(c){c.t++;if(done)c.d++;}
+      });
+    });
+  });
+  const pct=total>0?Math.round(totalDone/total*100):0;
+  document.getElementById('ov-progress').textContent=pct+'%';
+  document.getElementById('ov-task-count').textContent=totalDone+'/'+total;
+  const badge=document.getElementById('ov-plan-badge');
+  if(badge){badge.textContent=totalDone+'/'+total;badge.className='badge '+(pct>=70?'b-green':pct>=40?'b-amber':'b-gray');}
+  // Show/hide area rows based on area filter
+  const areaMap={tech:'bar-tech',soft:'bar-soft',net:'bar-net',app:'bar-app'};
+  Object.entries(cats).forEach(([cat,v])=>{
+    const pct=v.t>0?Math.round(v.d/v.t*100):0;
+    const bar=document.getElementById('bar-'+cat);const cnt=document.getElementById('cnt-'+cat);
+    if(bar)bar.style.width=pct+'%';if(cnt)cnt.textContent=v.d+'/'+v.t;
+  });
+  // Hide area rows that don't match area filter
+  document.querySelectorAll('#page-overview .prog-row:not(.stage-prog-row)').forEach(row=>{
+    const bar=row.querySelector('[id^="bar-"]');if(!bar)return;
+    const cat=bar.id.replace('bar-','');
+    row.style.display=(activeAreaFilter==='all'||activeAreaFilter===cat)?'':'none';
+  });
+  // Update and show/hide stage rows
+  let allT=0,allD=0;
+  STAGE_DEFS.forEach((stage,si)=>{
+    let sT=0,sD=0;
+    stage.weeks.forEach((week,wi)=>{
+      week.tasks.forEach((task,ti)=>{
+        if(activeAreaFilter!=='all'&&task.cat!==activeAreaFilter)return;
+        sT++;const done=isPlanDone(si,wi,ti);if(done)sD++;
+      });
+    });
+    allT+=sT;allD+=sD;
+    const sPct=sT>0?Math.round(sD/sT*100):0;
+    const sbar=document.getElementById('bar-stage-'+si);
+    const scnt=document.getElementById('cnt-stage-'+si);
+    if(sbar)sbar.style.width=sPct+'%';
+    if(scnt)scnt.textContent=sD+'/'+sT;
+  });
+  const allPct=allT>0?Math.round(allD/allT*100):0;
+  const abar=document.getElementById('bar-stage-all');
+  const acnt=document.getElementById('cnt-stage-all');
+  if(abar)abar.style.width=allPct+'%';
+  if(acnt)acnt.textContent=allD+'/'+allT;
+  document.querySelectorAll('.stage-prog-row').forEach(row=>{
+    const id=row.id;
+    if(activePlanStageFilter==='all'){
+      row.style.display=id==='srow-all'?'':'none';
+    } else {
+      row.style.display=id==='srow-'+activePlanStageFilter?'':'none';
+    }
+  });
+}
+
+// ─── THIS WEEK TASKS ────────────────────────────────────────────────
+function getThisWeekStageWeek(){
+  const now=new Date();const mon=getWeekMon(now);const nextMon=new Date(mon);nextMon.setDate(mon.getDate()+7);
+  let bestSi=-1,bestWi=-1,bestDiff=Infinity;
+  STAGE_DEFS.forEach((stage,si)=>{
+    let weekStart=new Date(stage.start);
+    stage.weeks.forEach((week,wi)=>{
+      const diff=now-weekStart;
+      if(diff>=0&&diff<bestDiff&&weekStart<nextMon){bestDiff=diff;bestSi=si;bestWi=wi;}
+      weekStart=addDays(weekStart,7);
+    });
+  });
+  return{si:bestSi,wi:bestWi};
+}
+function renderThisWeekTasks(){
+  const box=document.getElementById('week-tasks-content');if(!box)return;
+  const{si,wi}=getThisWeekStageWeek();
+  if(si<0){box.innerHTML='<p style="font-size:12px;color:var(--text3)">Plan starts May 24, 2026.</p>';return;}
+  const stage=STAGE_DEFS[si];const week=stage.weeks[wi];
+  let html=`<p style="font-size:11px;color:var(--text3);margin-bottom:6px">${stage.label} · ${week.label}</p>`;
+  week.tasks.forEach((task,ti)=>{
+    const done=isPlanDone(si,wi,ti);const label=getPlanLabel(si,wi,ti);
+    html+=`<div class="week-task-item ${done?'done-task':''}"><div class="week-task-dot ${done?'done-dot':''}"></div><span class="wk-cat ${CAT_CSS[task.cat]||'cat-gen'}" style="font-size:9px">${CAT_LABELS[task.cat]||'Gen'}</span>${label}</div>`;
+  });
+  box.innerHTML=html;
+}
+
+// ─── TIME SLOTS + TRACKER ──────────────────────────────────────────────
+const TIME_SLOTS=[
+  {t:'12–5am',k:'sleep_early'},{t:'6am',k:'wake'},{t:'6:30',k:'commute_gym'},
+  {t:'7am',k:'workout'},{t:'8am',k:'block_8'},{t:'9am',k:'block_9'},
+  {t:'10am',k:'block_10'},{t:'11am',k:'block_11'},{t:'12pm',k:'lunch'},
+  {t:'1pm',k:'block_1'},{t:'2pm',k:'block_2'},{t:'3pm',k:'block_3'},
+  {t:'4pm',k:'block_4'},{t:'5pm',k:'block_5'},{t:'6pm',k:'dinner'},
+  {t:'7pm',k:'hobby'},{t:'8pm',k:'leisure'},{t:'9pm',k:'winddown'},{t:'10pm',k:'sleep'},
+];
+const DEFAULT_PLANNED={
+  office:{sleep_early:'Sleep',wake:'Wake + get ready',commute_gym:'Commute to gym',workout:'Workout',block_8:'Commute to office',block_9:'Meetings',block_10:'Meetings',block_11:'Work — triage first',lunch:'Lunch + relax',block_1:'Work — focused block',block_2:'Python / prep in downtime',block_3:'Work',block_4:'Commute home',block_5:'Hard stop — decompress',dinner:'Dinner + rest',hobby:'Hobby / joy',leisure:'Leisure',winddown:'Wind down — no screens',sleep:'Sleep'},
+  wfh:{sleep_early:'Sleep',wake:'Wake + get ready',commute_gym:'Commute to gym',workout:'Workout',block_8:'Work — early focus',block_9:'Meetings',block_10:'Meetings',block_11:'Work — triage tasks',lunch:'Lunch + relax',block_1:'Resume / LinkedIn / network',block_2:'Python — focused block',block_3:'Work',block_4:'Work — wrap up',block_5:'Hard stop — close laptop',dinner:'Dinner + rest',hobby:'Hobby / joy',leisure:'Leisure',winddown:'Wind down — no screens',sleep:'Sleep'},
+  holiday:{sleep_early:'Sleep in — no alarm',wake:'Slow start',commute_gym:'Optional workout',workout:'Morning activity',block_8:'Rest / leisure',block_9:'Rest / leisure',block_10:'Career prep (optional)',block_11:'Career prep (optional)',lunch:'Lunch',block_1:'Joy — whatever restores you',block_2:'Rest / social',block_3:'Rest / social',block_4:'Rest / social',block_5:'Gentle evening',dinner:'Dinner',hobby:'Leisure',leisure:'Rest',winddown:'Wind down gently',sleep:'Sleep well'},
+};
+let userPlanned={office:{...DEFAULT_PLANNED.office},wfh:{...DEFAULT_PLANNED.wfh},holiday:{...DEFAULT_PLANNED.holiday}};
+const SECTIONS=[
+  {id:'morning',label:'Morning routine',keys:['sleep_early','wake','commute_gym','workout']},
+  {id:'work',label:'Work / day blocks',keys:['block_8','block_9','block_10','block_11','block_1','block_2','block_3','block_4','block_5']},
+  {id:'midday',label:'Lunch break',keys:['lunch']},
+  {id:'evening',label:'Evening recovery',keys:['dinner','hobby','leisure','winddown','sleep']},
+];
+const MONTHS=[{n:'June 2026',y:2026,m:5},{n:'July 2026',y:2026,m:6},{n:'August 2026',y:2026,m:7},{n:'September 2026',y:2026,m:8},{n:'October 2026',y:2026,m:9},{n:'November 2026',y:2026,m:10},{n:'December 2026',y:2026,m:11},{n:'January 2027',y:2027,m:0},{n:'February 2027',y:2027,m:1},{n:'March 2027',y:2027,m:2},{n:'April 2027',y:2027,m:3}];
+const dotState={};const holidays={};let savedLogs={};let pressTimer=null;
+
+function buildTracker(){
+  const grid=document.getElementById('month-grid');grid.innerHTML='';
+  let tO=0,tW=0,tH=0,onT=0,tr=0;
+  MONTHS.forEach((mo,mi)=>{
+    const wdays=gwd(mo.y,mo.m);
+    if(!dotState[mi])dotState[mi]=wdays.map(()=>null);
+    const hc=wdays.filter(d=>holidays[dk(d)]).length;
+    const eff=wdays.length-hc;const tgt=Math.ceil(eff*0.6);
+    const od=dotState[mi].filter(v=>v==='office').length;
+    const pct=eff>0?Math.round(od/eff*100):0;
+    const fc=pct>=60?'pg':pct>=40?'pa':'pr';
+    const any=dotState[mi].some(v=>!!v);
+    const sb=pct>=60?'b-green':!any?'b-gray':'b-red';
+    tO+=od;tW+=dotState[mi].filter(v=>v==='wfh').length;tH+=hc;if(any){tr++;if(pct>=60)onT++;}
+    const card=document.createElement('div');card.className='month-card';
+    card.innerHTML=`<div class="month-name">${mo.n}</div><div class="month-stats"><span class="month-stat">Office: <strong>${od}</strong>/${eff}</span><span class="badge ${sb}">${pct>=60?'On track':!any?'Not started':'Below target'}</span></div><div class="mprog-wrap"><div class="mprog-fill ${fc}" style="width:${Math.min(pct,100)}%"></div></div><div style="font-size:10px;color:var(--text3);margin-bottom:4px">Target: ${tgt}${hc>0?' ('+hc+' hol. excl.)':''} — ${pct}%</div><div class="day-dots" id="dots-${mi}"></div>`;
+    grid.appendChild(card);
+    const de=card.querySelector('#dots-'+mi);
+    const sd=new Date(mo.y,mo.m,1).getDay();const off=sd===0?6:sd-1;
+    for(let i=0;i<off;i++){const b=document.createElement('div');b.style.cssText='width:24px;height:24px';de.appendChild(b);}
+    let wi=0;const ad=new Date(mo.y,mo.m,1);
+    while(ad.getMonth()===mo.m){
+      const dow=ad.getDay();const dot=document.createElement('div');const key=dk(ad);const dn=ad.getDate();
+      if(dow===0||dow===6){dot.className='dot weekend';dot.textContent=dn;}
+      else{
+        const ih=!!holidays[key];const v=dotState[mi][wi];const hasLog=!!savedLogs[key];
+        let cls='dot';
+        if(ih)cls+=' holiday';else if(v==='office')cls+=' office';else if(v==='wfh')cls+=' wfh';else if(v==='holiday')cls+=' holiday';
+        dot.className=cls;dot.textContent=dn;
+        if(hasLog)dot.style.boxShadow='inset 0 0 0 2px var(--purple)';else dot.style.boxShadow='none';
+        const cMi=mi,cWi=wi,cKey=key,cDate=new Date(ad);
+        dot.addEventListener('click',(e)=>{
+          if(e.shiftKey){if(holidays[cKey]){delete holidays[cKey];dotState[cMi][cWi]=null;}else{holidays[cKey]=true;dotState[cMi][cWi]='holiday';}buildTracker();return;}
+          if(holidays[cKey]){openScheduleModal(cKey,cDate,'holiday');return;}
+          const cur=dotState[cMi][cWi];
+          if(cur===null){dotState[cMi][cWi]='office';buildTracker();openScheduleModal(cKey,cDate,'office');return;}
+          if(cur==='office'){dotState[cMi][cWi]='wfh';buildTracker();openScheduleModal(cKey,cDate,'wfh');return;}
+          if(cur==='wfh'){dotState[cMi][cWi]='holiday';holidays[cKey]=true;buildTracker();openScheduleModal(cKey,cDate,'holiday');return;}
+          dotState[cMi][cWi]=null;buildTracker();
+        });
+        dot.addEventListener('touchstart',()=>{pressTimer=setTimeout(()=>{if(holidays[cKey]){delete holidays[cKey];dotState[cMi][cWi]=null;}else{holidays[cKey]=true;dotState[cMi][cWi]='holiday';}buildTracker();},700);},{passive:true});
+        dot.addEventListener('touchend',()=>{clearTimeout(pressTimer);},{passive:true});
+        dot.addEventListener('touchmove',()=>{clearTimeout(pressTimer);},{passive:true});
+        wi++;
+      }
+      de.appendChild(dot);ad.setDate(ad.getDate()+1);
+    }
+  });
+  document.getElementById('total-office').textContent=tO;
+  document.getElementById('total-wfh').textContent=tW;
+  document.getElementById('total-hol').textContent=tH;
+  document.getElementById('months-on-track').textContent=onT+'/'+tr;
+}
+
+// ─── SCHEDULE FORM ────────────────────────────────────────────────────
+function buildScheduleFormHTML(type,existing,dateKey,isModal){
+  const planned=userPlanned[type]||userPlanned.office;
+  const typeLabel={office:'Office day',wfh:'WFH day',holiday:'Holiday'}[type];
+  let html='';
+  html+=`<p class="section-divider">Morning check-in</p>`;
+  [{id:'mc1',label:'Set one realistic work goal'},{id:'mc2',label:'Said reframe out loud'},{id:'mc3',label:'Triaged task list — real vs anxiety stakes'},{id:'mc4',label:'Checked my own scoreboard — not hers'}].forEach(c=>{
+    const chk=existing&&existing.morningChecks&&existing.morningChecks[c.id];
+    html+=`<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;cursor:pointer"><input type="checkbox" data-mc="${c.id}" ${chk?'checked':''} style="accent-color:var(--green);width:16px;height:16px"> ${c.label}</label>`;
+  });
+  html+=`<p class="section-divider">Schedule — ${typeLabel}</p>`;
+  html+=`<div class="edit-note">Tap any planned cell to edit your template for this day type.</div>`;
+  html+=`<div class="day-wrap"><div class="hour-row hdr-lbl"><div class="hr-label"></div><div class="hr-planned">Planned <span style="font-weight:400;font-size:10px;color:var(--text3)">(editable)</span></div><div class="hr-planned" style="border-left:1px solid var(--border)">Flag if different</div></div>`;
+  TIME_SLOTS.forEach(s=>{
+    const planVal=planned[s.k]||'';
+    const slotData=existing&&existing.slots&&existing.slots[s.k];
+    const flagged=slotData?slotData.flagged||false:false;
+    const note=slotData?slotData.note||'':'';
+    html+=`<div class="hour-row" style="grid-template-columns:44px 1fr 1fr">
+      <div class="hr-label">${s.t}</div>
+      <div class="hr-planned"><input type="text" class="plan-inp" data-type="${type}" data-k="${s.k}" value="${planVal.replace(/"/g,'&quot;')}"/></div>
+      <div class="hr-actual-cell">
+        <div class="hr-actual"><label class="flag-toggle"><input type="checkbox" class="flag-chk" data-k="${s.k}" ${flagged?'checked':''} onchange="toggleFlag(this)"> Differs from plan</label></div>
+        <div class="flag-row ${flagged?'visible':''}" id="flagrow-${s.k}"><textarea class="flag-note" data-k="${s.k}" placeholder="What happened instead?">${note.replace(/</g,'&lt;')}</textarea></div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+  html+=`<p class="section-divider">Evening check-in</p>`;
+  [{id:'ec1',label:'Laptop closed — hard stop honored'},{id:'ec2',label:'Wrote one win from today'},{id:'ec3',label:'Did one thing for my future today'},{id:'ec4',label:'Transition ritual done'},{id:'ec5',label:'Body moved today'}].forEach(c=>{
+    const chk=existing&&existing.eveningChecks&&existing.eveningChecks[c.id];
+    html+=`<label style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;cursor:pointer"><input type="checkbox" data-ec="${c.id}" ${chk?'checked':''} style="accent-color:var(--green);width:16px;height:16px"> ${c.label}</label>`;
+  });
+  html+=`<p class="section-divider">How was today?</p>`;
+  const dr=existing?existing.dayRating||'':'';
+  html+=`<div class="traffic-row" style="margin-bottom:10px">
+    <div class="t-card tg-c day-r-btn ${dr==='good'?'sel-green':''}" onclick="selRating(this,'good')"><div class="t-lbl">Good day</div><div class="t-sub">Held boundaries</div></div>
+    <div class="t-card ta-c day-r-btn ${dr==='mixed'?'sel-amber':''}" onclick="selRating(this,'mixed')"><div class="t-lbl">Mixed day</div><div class="t-sub">Some slippage</div></div>
+    <div class="t-card tr-c day-r-btn ${dr==='hard'?'sel-red':''}" onclick="selRating(this,'hard')"><div class="t-lbl">Hard day</div><div class="t-sub">Need reset</div></div>
+  </div><input type="hidden" id="day-rating-val" value="${dr}"/>`;
+  html+=`<p class="section-divider">Mindset scoreboard</p>`;
+  const s1=existing?existing.sc1||'':'';const s2=existing?existing.sc2||'':'';const s3=existing?existing.sc3||'':'';
+  html+=`<div class="grid3" style="margin-bottom:10px">
+    <div class="metric"><p class="metric-label">Reasonable work?</p><div id="ms1" style="font-size:15px;font-weight:600;margin:4px 0">${s1||'—'}</div><div style="display:flex;gap:4px;justify-content:center"><button class="reset-btn" onclick="setMS('ms1','Yes')">Yes</button><button class="reset-btn" onclick="setMS('ms1','No')">No</button></div></div>
+    <div class="metric"><p class="metric-label">Energy protected?</p><div id="ms2" style="font-size:15px;font-weight:600;margin:4px 0">${s2||'—'}</div><div style="display:flex;gap:4px;justify-content:center"><button class="reset-btn" onclick="setMS('ms2','Yes')">Yes</button><button class="reset-btn" onclick="setMS('ms2','No')">No</button></div></div>
+    <div class="metric"><p class="metric-label">One thing for future?</p><div id="ms3" style="font-size:15px;font-weight:600;margin:4px 0">${s3||'—'}</div><div style="display:flex;gap:4px;justify-content:center"><button class="reset-btn" onclick="setMS('ms3','Yes')">Yes</button><button class="reset-btn" onclick="setMS('ms3','No')">No</button></div></div>
+  </div>`;
+  html+=`<p class="section-divider">Reflection</p>`;
+  html+=`<div class="reflect-grid"><div class="reflect-item"><label>What went well?</label><textarea id="ref-well" placeholder="Write here...">${existing&&existing.refWell?existing.refWell.replace(/</g,'&lt;'):''}</textarea></div><div class="reflect-item"><label>What would I change tomorrow?</label><textarea id="ref-change" placeholder="Write here...">${existing&&existing.refChange?existing.refChange.replace(/</g,'&lt;'):''}</textarea></div></div>`;
+  html+=`<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="save-btn" onclick="saveFromForm('${dateKey}','${type}')">Save this day</button>${isModal?`<button class="action-btn" onclick="closeModal()">Cancel</button>`:''}${existing?`<span style="font-size:11px;color:var(--green);align-self:center">Previously saved</span>`:''}</div>`;
+  return html;
+}
+function openScheduleModal(dateKey,dateObj,type){
+  document.getElementById('modal-title').textContent=dateObj.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric',year:'numeric'})+' — '+{office:'Office day',wfh:'WFH day',holiday:'Holiday'}[type];
+  document.getElementById('modal-body').innerHTML=buildScheduleFormHTML(type,savedLogs[dateKey],dateKey,true);
+  document.getElementById('schedule-modal').classList.add('open');
+}
+function closeModal(){document.getElementById('schedule-modal').classList.remove('open');}
+function toggleFlag(cb){const k=cb.dataset.k;const row=document.getElementById('flagrow-'+k);if(row){cb.checked?row.classList.add('visible'):row.classList.remove('visible');}}
+document.addEventListener('input',function(e){if(e.target.classList.contains('plan-inp')){const type=e.target.dataset.type;const k=e.target.dataset.k;if(userPlanned[type])userPlanned[type][k]=e.target.value;}});
+function saveFromForm(dateKey,type){
+  const ctx=document.getElementById('modal-body')||document.getElementById('capture-form-area');
+  const slotData={};
+  TIME_SLOTS.forEach(s=>{
+    const planInp=ctx.querySelector(`.plan-inp[data-k="${s.k}"]`);
+    const flagChk=ctx.querySelector(`.flag-chk[data-k="${s.k}"]`);
+    const flagNote=ctx.querySelector(`.flag-note[data-k="${s.k}"]`);
+    slotData[s.k]={planned:planInp?planInp.value.trim():'',flagged:flagChk?flagChk.checked:false,note:flagNote?flagNote.value.trim():''};
+  });
+  const mc={};ctx.querySelectorAll('[data-mc]').forEach(cb=>{mc[cb.dataset.mc]=cb.checked;});
+  const ec={};ctx.querySelectorAll('[data-ec]').forEach(cb=>{ec[cb.dataset.ec]=cb.checked;});
+  savedLogs[dateKey]={type,slots:slotData,morningChecks:mc,eveningChecks:ec,
+    dayRating:(document.getElementById('day-rating-val')||{}).value||'',
+    sc1:(document.getElementById('ms1')||{}).textContent||'',
+    sc2:(document.getElementById('ms2')||{}).textContent||'',
+    sc3:(document.getElementById('ms3')||{}).textContent||'',
+    refWell:(document.getElementById('ref-well')||{}).value||'',
+    refChange:(document.getElementById('ref-change')||{}).value||'',
+    savedAt:new Date().toISOString()};
+  closeModal();buildTracker();refreshSavedList();checkWeekCompliance();buildMoodCal();buildReflections();
+  const st=document.getElementById('save-status');if(st){st.textContent='Saved ✓';setTimeout(()=>st.textContent='',2500);}
+}
+function initCapture(){const d=document.getElementById('capture-date');if(d&&!d.value)d.value=todayStr();renderCaptureForm();}
+function renderCaptureForm(){const type=document.getElementById('capture-type').value;const dateKey=document.getElementById('capture-date').value||todayStr();document.getElementById('capture-form-area').innerHTML=buildScheduleFormHTML(type,savedLogs[dateKey],dateKey,false);}
+function saveCapture(){saveFromForm(document.getElementById('capture-date').value||todayStr(),document.getElementById('capture-type').value);}
+function refreshSavedList(){
+  const el=document.getElementById('saved-days-list');const keys=Object.keys(savedLogs).sort().reverse();
+  if(!keys.length){el.innerHTML='<div class="empty-state"><p>No days saved yet.</p></div>';return;}
+  el.innerHTML=keys.map(k=>{const log=savedLogs[k];const d=new Date(k+'T12:00:00');const label=d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});const rB=log.dayRating?`<span class="badge ${log.dayRating==='good'?'b-green':log.dayRating==='mixed'?'b-amber':'b-red'}">${log.dayRating}</span>`:'';return`<div class="log-item"><div><div style="font-size:13px;font-weight:500">${label} ${rB}</div><div style="font-size:11px;color:var(--text2)">${log.type}</div></div><div style="display:flex;gap:6px"><button class="log-btn" onclick="editLog('${k}')">Edit</button><button class="log-btn" style="color:var(--red)" onclick="deleteLog('${k}')">Del</button></div></div>`;}).join('');
+}
+function editLog(dateKey){const log=savedLogs[dateKey];if(!log)return;openScheduleModal(dateKey,new Date(dateKey+'T12:00:00'),log.type);}
+function deleteLog(dateKey){if(confirm('Delete?')){delete savedLogs[dateKey];refreshSavedList();buildTracker();checkWeekCompliance();buildMoodCal();buildReflections();}}
+
+// ─── COMPLIANCE ──────────────────────────────────────────────────────
+function slotOnPlan(s){return!s||!s.flagged;}
+function calcCompliance(keys){
+  let sm=0,st=0;
+  const sr=SECTIONS.map(sec=>{let m=0,t=0;keys.forEach(dk=>{const log=savedLogs[dk];if(!log)return;sec.keys.forEach(k=>{const s=log.slots&&log.slots[k];const p=s&&s.planned?s.planned:userPlanned[log.type]&&userPlanned[log.type][k]||'';if(!p)return;t++;if(slotOnPlan(s))m++;});});sm+=m;st+=t;return{...sec,match:m,total:t,pct:t>0?Math.round(m/t*100):null};});
+  const ratings=keys.map(k=>savedLogs[k]&&savedLogs[k].dayRating).filter(Boolean);
+  const rS=ratings.length?Math.round(ratings.reduce((a,r)=>a+(r==='good'?100:r==='mixed'?50:0),0)/ratings.length):null;
+  const mSc=keys.map(k=>{const l=savedLogs[k];if(!l)return null;return Math.round([l.sc1,l.sc2,l.sc3].filter(v=>v==='Yes').length/3*100);}).filter(v=>v!==null);
+  const msS=mSc.length?Math.round(mSc.reduce((a,b)=>a+b,0)/mSc.length):null;
+  const mcSc=keys.map(k=>{const l=savedLogs[k];if(!l||!l.morningChecks)return null;return Math.round(Object.values(l.morningChecks).filter(Boolean).length/4*100);}).filter(v=>v!==null);
+  const mcS=mcSc.length?Math.round(mcSc.reduce((a,b)=>a+b,0)/mcSc.length):null;
+  const op=st>0?Math.round(sm/st*100):0;
+  return{sectionResults:sr,overallPct:op,ratingScore:rS,mindScore:msS,mcScore:mcS,schMatch:sm,schTotal:st,days:keys.length};
+}
+function checkWeekCompliance(){
+  const keys=getWeekKeys();const ov=document.getElementById('week-compliance-ov');
+  if(!keys.length){if(ov)ov.textContent='—';['ov-alert','compliance-alert'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.remove('show');});document.getElementById('emergency-nav-btn').classList.remove('alert-cue');return;}
+  const{overallPct}=calcCompliance(keys);if(ov)ov.textContent=overallPct+'%';
+  const isLow=overallPct<60;
+  ['ov-alert','compliance-alert'].forEach(id=>{const e=document.getElementById(id);if(e)e.classList.toggle('show',isLow);});
+  document.getElementById('emergency-nav-btn').classList.toggle('alert-cue',isLow);
+}
+function buildCompliance(period){
+  let keys=Object.keys(savedLogs);const now=new Date();
+  if(period==='week')keys=getWeekKeys();
+  else if(period==='month'){const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');keys=keys.filter(k=>k.startsWith(ym));}
+  const out=document.getElementById('compliance-output');
+  if(!keys.length){out.innerHTML='<div class="empty-state"><p>No saved days in this period.</p></div>';return;}
+  const{sectionResults,overallPct,ratingScore,mindScore,mcScore,schMatch,schTotal,days}=calcCompliance(keys);
+  const pl=period==='all'?'All time':period==='month'?'This month':'This week';
+  const oP=overallPct>=70?'good':overallPct>=50?'mid':'low';const oB=overallPct>=70?'comp-good':overallPct>=50?'comp-mid':'comp-low';
+  let html=`<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font-size:13px;font-weight:500">${pl} — ${days} day${days>1?'s':''}</span><span class="comp-pct ${oP}">${overallPct}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${oB}" style="width:${overallPct}%"></div></div><p style="font-size:11px;color:var(--text3);margin-top:4px">${schMatch}/${schTotal} slots on plan</p></div>`;
+  html+=`<p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Schedule sections</p>`;
+  sectionResults.forEach(r=>{if(r.pct===null)return;const pc=r.pct>=70?'good':r.pct>=50?'mid':'low';const bc=r.pct>=70?'comp-good':r.pct>=50?'comp-mid':'comp-low';html+=`<div class="comp-section"><div class="comp-section-title"><span>${r.label}</span><span class="comp-pct ${pc}">${r.pct}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${bc}" style="width:${r.pct}%"></div></div><p style="font-size:10px;color:var(--text3);margin-top:2px">${r.match}/${r.total} on plan</p></div>`;});
+  html+=`<p style="font-size:12px;font-weight:500;color:var(--text2);margin:14px 0 8px">Day quality</p>`;
+  [{label:'Day rating',val:ratingScore,desc:'Good=100, Mixed=50, Hard=0'},{label:'Mindset',val:mindScore,desc:'Avg % Yes answers'},{label:'Morning check-ins',val:mcScore,desc:'Avg % completed'}].forEach(item=>{if(item.val===null)return;const pc=item.val>=70?'good':item.val>=50?'mid':'low';const bc=item.val>=70?'comp-good':item.val>=50?'comp-mid':'comp-low';html+=`<div class="comp-section"><div class="comp-section-title"><span>${item.label}</span><span class="comp-pct ${pc}">${item.val}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${bc}" style="width:${item.val}%"></div></div><p style="font-size:10px;color:var(--text3);margin-top:2px">${item.desc}</p></div>`;});
+  const working=sectionResults.filter(r=>r.pct!==null&&r.pct>=70);const struggling=sectionResults.filter(r=>r.pct!==null&&r.pct<50);
+  if(working.length||struggling.length){html+=`<div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:var(--radius)"><p style="font-size:12px;font-weight:500;margin-bottom:8px">Insights</p>`;if(working.length){html+=`<p style="font-size:11px;font-weight:500;color:var(--green-text);margin-bottom:4px">Working well</p>`;working.forEach(r=>{html+=`<div class="insight"><div class="insight-dot" style="background:var(--green)"></div>${r.label} — ${r.pct}%</div>`;});}if(struggling.length){html+=`<p style="font-size:11px;font-weight:500;color:var(--red-text);margin:8px 0 4px">Needs attention</p>`;struggling.forEach(r=>{html+=`<div class="insight"><div class="insight-dot" style="background:var(--red)"></div>${r.label} — ${r.pct}%</div>`;});}html+=`</div>`;}
+  if(overallPct<60)html+=`<div style="margin-top:12px;padding:12px;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);font-size:13px;color:var(--red-text)">⚠️ Below 60% — open Emergency tab.</div>`;
+  out.innerHTML=html;
+}
+
+// ─── MOOD CAL & REFLECTIONS ──────────────────────────────────────────
+let moodCalYear=new Date().getFullYear();let moodCalMonth=new Date().getMonth();
+function moveMoodCal(dir){moodCalMonth+=dir;if(moodCalMonth>11){moodCalMonth=0;moodCalYear++;}else if(moodCalMonth<0){moodCalMonth=11;moodCalYear--;}buildMoodCal();}
+function buildMoodCal(){
+  const el=document.getElementById('mood-cal-grid');const titleEl=document.getElementById('mood-cal-title');if(!el||!titleEl)return;
+  titleEl.textContent=new Date(moodCalYear,moodCalMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  let html='';const dayNames=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];dayNames.forEach(d=>{html+=`<div class="cal-day-hdr">${d}</div>`;});
+  const firstDay=new Date(moodCalYear,moodCalMonth,1).getDay();const offset=firstDay===0?6:firstDay-1;
+  for(let i=0;i<offset;i++)html+=`<div></div>`;
+  const dim=new Date(moodCalYear,moodCalMonth+1,0).getDate();
+  for(let d=1;d<=dim;d++){
+    const dateStr=moodCalYear+'-'+String(moodCalMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    const log=savedLogs[dateStr];const rating=log?log.dayRating:'';const isToday=dateStr===todayStr();
+    let cls='cal-day';if(rating==='good')cls+=' mood-good';else if(rating==='mixed')cls+=' mood-mixed';else if(rating==='hard')cls+=' mood-hard';if(isToday)cls+=' cal-today';if(log)cls+=' has-log';
+    const typeLabel=log?{office:'O',wfh:'W',holiday:'H'}[log.type]||'':'';
+    html+=`<div class="${cls}" ${log?`onclick="editLog('${dateStr}')"`:''}>
+      <div class="cal-day-num">${d}</div>${typeLabel?`<div class="cal-day-type">${typeLabel}</div>`:''}
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+function buildReflections(){
+  const el=document.getElementById('reflections-list');if(!el)return;
+  const keys=Object.keys(savedLogs).filter(k=>{const l=savedLogs[k];return l&&(l.refWell||l.refChange);}).sort();
+  if(!keys.length){el.innerHTML='<div class="empty-state"><div style="font-size:24px">📝</div><p>No reflections saved yet.</p></div>';return;}
+  el.innerHTML=keys.map(k=>{
+    const log=savedLogs[k];const d=new Date(k+'T12:00:00');
+    const label=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+    const rB=log.dayRating?`<span class="badge ${log.dayRating==='good'?'b-green':log.dayRating==='mixed'?'b-amber':'b-red'}">${log.dayRating}</span>`:'';
+    let html=`<div class="ref-log-item"><div class="ref-log-date">${label} ${rB}</div>`;
+    if(log.refWell)html+=`<div class="ref-log-row">✓ <span>Went well:</span> ${log.refWell.replace(/</g,'&lt;')}</div>`;
+    if(log.refChange)html+=`<div class="ref-log-row">→ <span>Change tomorrow:</span> ${log.refChange.replace(/</g,'&lt;')}</div>`;
+    return html+`</div>`;
+  }).join('');
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────
+function goTo(id,btn){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');btn.classList.add('active');
+  if(id==='schedule'){refreshSavedList();checkWeekCompliance();renderThisWeekTasks();}
+  if(id==='overview'){syncPlanToOverview();checkWeekCompliance();}
+}
+function goSchedTab(id,el){
+  document.querySelectorAll('#page-schedule .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#page-schedule .iview').forEach(v=>v.classList.remove('active'));
+  document.getElementById('iview-'+id).classList.add('active');el.classList.add('active');
+  if(id==='capture')initCapture();
+  if(id==='compliance'){refreshSavedList();buildCompliance('week');}
+  if(id==='tracker')renderThisWeekTasks();
+  if(id==='moodcal')buildMoodCal();
+  if(id==='reflections')buildReflections();
+}
+function goPlanStage(si,el){
+  document.querySelectorAll('#plan-stage-tabs .tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('#page-plan .iview').forEach(v=>v.classList.remove('active'));
+  document.getElementById('plan-stage-'+si).classList.add('active');el.classList.add('active');
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────
+function selRating(el,val){document.querySelectorAll('.day-r-btn').forEach(b=>{b.classList.remove('sel-green','sel-amber','sel-red');});el.classList.add(val==='good'?'sel-green':val==='mixed'?'sel-amber':'sel-red');const hid=document.getElementById('day-rating-val');if(hid)hid.value=val;}
+function setMS(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function togQ(li){li.classList.toggle('done');li.querySelector('svg').style.display=li.classList.contains('done')?'block':'none';}
+function resetList(id){document.querySelectorAll('#'+id+' .q-item').forEach(li=>{li.classList.remove('done');li.querySelector('svg').style.display='none';});}
+function updateWeekStartLabel(){const mon=getWeekMon(new Date());const label=mon.toLocaleDateString('en-US',{month:'short',day:'numeric'});const el=document.getElementById('week-start-label');if(el)el.textContent=label;}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+
+// ─── PERSISTENCE ──────────────────────────────────────────────────────
+const SYNC_VERSION=1;
+let syncKey='',syncBinId='',syncApiKey='';
+try{
+  syncKey=localStorage.getItem('ecSyncKey')||'';
+  syncBinId=localStorage.getItem('ecSyncBinId')||'';
+  syncApiKey=localStorage.getItem('ecSyncApiKey')||'';
+}catch(e){}
+let _pushTimer=null;   // debounce timer for cloud push
+let _pushing=false;    // prevent concurrent pushes
+let _pendingPush=false;// queue one more push if one is in flight
+
+// ─── STATE SNAPSHOT ───────────────────────────────────────────────────
+function getAppState(){
+  return{
+    v:SYNC_VERSION,
+    savedLogs,planState,planTaskLabels,userPlanned,dotState,holidays,
+    planAreaFilter,activePlanStageFilter,activeAreaFilter,
+    stageTasks:STAGE_DEFS.map(s=>s.weeks.map(w=>w.tasks.map(t=>({t:t.t,cat:t.cat})))),
+    ts:Date.now()
+  };
+}
+function applyAppState(state){
+  if(!state||!state.v)return;
+  if(state.savedLogs)Object.assign(savedLogs,state.savedLogs);
+  if(state.planState)Object.assign(planState,state.planState);
+  if(state.planTaskLabels)Object.assign(planTaskLabels,state.planTaskLabels);
+  if(state.userPlanned)['office','wfh','holiday'].forEach(t=>{if(state.userPlanned[t])Object.assign(userPlanned[t],state.userPlanned[t]);});
+  if(state.dotState)Object.assign(dotState,state.dotState);
+  if(state.holidays)Object.assign(holidays,state.holidays);
+  if(state.planAreaFilter)Object.assign(planAreaFilter,state.planAreaFilter);
+  if(state.activePlanStageFilter!==undefined)activePlanStageFilter=state.activePlanStageFilter;
+  if(state.activeAreaFilter!==undefined)activeAreaFilter=state.activeAreaFilter;
+  if(state.stageTasks)state.stageTasks.forEach((stageTasks,si)=>{
+    if(!STAGE_DEFS[si])return;
+    stageTasks.forEach((weekTasks,wi)=>{
+      if(!STAGE_DEFS[si].weeks[wi])return;
+      STAGE_DEFS[si].weeks[wi].tasks=weekTasks.map(t=>({t:t.t,cat:t.cat,done:false}));
+    });
+  });
+}
+
+// ─── LOCAL STORAGE ────────────────────────────────────────────────────
+let _localStorageAvailable=(()=>{try{localStorage.setItem('_t','1');localStorage.removeItem('_t');return true;}catch(e){return false;}})();
+
+function saveLocal(state){
+  if(!_localStorageAvailable)return;
+  try{localStorage.setItem('ecAppState',JSON.stringify(state));}
+  catch(e){_localStorageAvailable=false;setSyncStatus('⚠️ Storage unavailable — data not saved locally');}
+}
+function loadLocal(){
+  if(!_localStorageAvailable)return null;
+  try{const s=localStorage.getItem('ecAppState');return s?JSON.parse(s):null;}
+  catch(e){return null;}
+}
+
+// ─── CLOUD PUSH (debounced 4s) ────────────────────────────────────────
+function scheduleCloudPush(){
+  if(!syncApiKey||!syncBinId)return;
+  clearTimeout(_pushTimer);
+  _pushTimer=setTimeout(()=>doCloudPush(getAppState()),4000);
+}
+
+async function doCloudPush(state){
+  if(_pushing){_pendingPush=true;return;}
+  _pushing=true;_pendingPush=false;
+  setSyncStatus('☁️ Syncing…');
+  try{
+    const body=JSON.stringify({record:state});
+    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':syncApiKey},
+      body
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    setSyncStatus('☁️ Synced',3000);
+  }catch(e){
+    setSyncStatus('⚠️ Sync failed — saved locally');
+  }
+  _pushing=false;
+  if(_pendingPush)setTimeout(()=>doCloudPush(getAppState()),500);
+}
+
+// ─── CLOUD CREATE (first push — creates the bin) ──────────────────────
+async function createCloudBin(state){
+  setSyncStatus('☁️ Creating sync bin…');
+  try{
+    const res=await fetch('https://api.jsonbin.io/v3/b',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-Master-Key':syncApiKey,
+               'X-Bin-Name':'EscapePlan'+(syncKey?'-'+syncKey:''),'X-Bin-Private':'true'},
+      body:JSON.stringify({record:state})
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    if(data.metadata&&data.metadata.id){
+      syncBinId=data.metadata.id;
+      try{localStorage.setItem('ecSyncBinId',syncBinId);}catch(e){}
+      const binInput=document.getElementById('sync-bin-input');
+      if(binInput)binInput.value=syncBinId;
+      const binDisplay=document.getElementById('bin-id-display');
+      if(binDisplay)binDisplay.innerHTML='<strong>Bin ID: '+syncBinId+'</strong> — copy this to your second device';
+      setSyncStatus('☁️ Sync bin created! Copy the Bin ID above.',5000);
+    }
+  }catch(e){setSyncStatus('⚠️ Could not create bin: '+e.message);}
+}
+
+// ─── CLOUD PULL ───────────────────────────────────────────────────────
+async function pullFromCloud(){
+  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');return;}
+  setSyncStatus('☁️ Loading from cloud…');
+  try{
+    const res=await fetch('https://api.jsonbin.io/v3/b/'+syncBinId+'/latest',{
+      headers:{'X-Master-Key':syncApiKey}
+    });
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    // JSONBin wraps response in {record:...} — handle both direct and wrapped
+    let state=data.record||data;
+    // If the cloud has old format data (no v field), treat it as empty and
+    // overwrite with current local state rather than failing
+    if(!state||typeof state!=='object'||Array.isArray(state)){
+      setSyncStatus('☁️ Cloud empty — pushing local data…');
+      await doCloudPush(getAppState());
+      return;
+    }
+    // Accept data with or without version field — just look for known keys
+    const hasKnownKeys=state.savedLogs||state.planState||state.stageTasks||state.dotState;
+    if(!hasKnownKeys){
+      // Cloud bin exists but has no app data — push local up
+      setSyncStatus('☁️ Cloud empty — pushing local data…');
+      await doCloudPush(getAppState());
+      return;
+    }
+    const local=loadLocal();
+    const cloudTs=state.ts||0;
+    const localTs=local?local.ts||0:0;
+    if(!local||cloudTs>localTs){
+      applyAppState(state);
+      // Stamp version if missing
+      state.v=state.v||SYNC_VERSION;
+      saveLocal(state);
+      rebuildAll();
+      setSyncStatus('☁️ Loaded from cloud',3000);
+    } else {
+      setSyncStatus('✓ Local data is up to date',3000);
+    }
+  }catch(e){setSyncStatus('⚠️ Pull failed: '+e.message);}
+}
+
+// ─── STATUS ───────────────────────────────────────────────────────────
+function setSyncStatus(msg,clearMs){
+  const el=document.getElementById('sync-status-text');
+  if(el)el.textContent=msg;
+  const bar=document.getElementById('sync-status-bar-text');
+  if(bar)bar.textContent=msg;
+  if(clearMs)setTimeout(()=>{
+    const idle=syncApiKey&&syncBinId?'☁️ Sync on':'💾 Local only';
+    if(el)el.textContent='';
+    if(bar)bar.textContent=idle;
+  },clearMs);
+}
+
+// ─── AUTO SAVE (local immediately, cloud debounced) ───────────────────
+function autoSave(){
+  const state=getAppState();
+  saveLocal(state);         // instant, synchronous
+  scheduleCloudPush();      // debounced 4s — batches rapid changes
+}
+
+function rebuildAll(){
+  buildTracker();buildAllPlanStages();syncPlanToOverview();
+  renderThisWeekTasks();checkWeekCompliance();updateWeekStartLabel();
+  buildMoodCal();buildReflections();refreshSavedList();
+}
+
+// ─── SYNC SETTINGS MODAL ──────────────────────────────────────────────
+function openSyncSettings(){
+  document.getElementById('sync-modal').classList.add('open');
+  document.getElementById('sync-key-input').value=syncKey;
+  document.getElementById('sync-api-input').value=syncApiKey;
+  document.getElementById('sync-bin-input').value=syncBinId;
+  const binDisplay=document.getElementById('bin-id-display');
+  if(binDisplay)binDisplay.textContent=syncBinId?'Bin ID: '+syncBinId+' (copy this to your second device)':'';
+  const st=document.getElementById('sync-status-text');if(st)st.textContent='';
+}
+function closeSyncModal(){document.getElementById('sync-modal').classList.remove('open');}
+
+function saveSyncSettings(){
+  syncKey=document.getElementById('sync-key-input').value.trim();
+  syncApiKey=document.getElementById('sync-api-input').value.trim();
+  syncBinId=document.getElementById('sync-bin-input').value.trim();
+  try{localStorage.setItem('ecSyncKey',syncKey);localStorage.setItem('ecSyncApiKey',syncApiKey);localStorage.setItem('ecSyncBinId',syncBinId);}catch(e){}
+  if(syncApiKey&&syncBinId){
+    setSyncStatus('Settings saved — pulling from cloud…');
+    pullFromCloud();
+    const d=document.getElementById('bin-id-display');
+    if(d)d.innerHTML='<strong>Bin ID: '+syncBinId+'</strong> — copy this to your second device';
+  } else if(syncApiKey&&!syncBinId){
+    setSyncStatus('API key saved. Tap "Push ↑" to create your sync bin.');
+  } else if(!syncApiKey){
+    setSyncStatus('Cleared — saving locally only');setTimeout(closeSyncModal,1500);
+  }
+}
+
+function forcePush(){
+  const state=getAppState();saveLocal(state);
+  if(!syncApiKey){setSyncStatus('Enter API key first');return;}
+  if(!syncBinId){createCloudBin(state);}
+  else{doCloudPush(state);}
+}
+function forcePull(){
+  if(!syncApiKey||!syncBinId){setSyncStatus('Enter API key and Bin ID first');openSyncSettings();return;}
+  pullFromCloud();
+}
+
+// Patch all save points to call autoSave
+const _origSaveFromForm=saveFromForm;
+saveFromForm=function(dateKey,type){_origSaveFromForm(dateKey,type);setTimeout(autoSave,100);};
+const _origTogglePlanTask=togglePlanTask;
+togglePlanTask=function(si,wi,ti,cb){_origTogglePlanTask(si,wi,ti,cb);setTimeout(autoSave,100);};
+const _origDeletePlanTask=deletePlanTask;
+deletePlanTask=function(si,wi,ti){_origDeletePlanTask(si,wi,ti);setTimeout(autoSave,100);};
+const _origAddPlanTask=addPlanTask;
+addPlanTask=function(si,wi){_origAddPlanTask(si,wi);setTimeout(autoSave,200);};
+const _origDeleteLog=deleteLog;
+deleteLog=function(k){_origDeleteLog(k);setTimeout(autoSave,100);};
+const _origChangePlanTaskCat=changePlanTaskCat;
+changePlanTaskCat=function(si,wi,ti,cat){_origChangePlanTaskCat(si,wi,ti,cat);setTimeout(autoSave,200);};
+// Patch plan-inp changes
+document.addEventListener('change',function(e){
+  if(e.target.classList.contains('plan-inp')||e.target.classList.contains('wk-label')){setTimeout(autoSave,500);}
+});
+document.addEventListener('DOMContentLoaded',()=>{
+  const capDate=document.getElementById('capture-date');
+  if(capDate){capDate.value=todayStr();capDate.addEventListener('change',renderCaptureForm);}
+  // 1. Load local state instantly — app is usable immediately
+  const localState=loadLocal();
+  if(localState)applyAppState(localState);
+  // 2. Render everything
+  buildAllPlanStages();
+  syncPlanToOverview();
+  renderThisWeekTasks();
+  updateWeekStartLabel();
+  buildMoodCal();
+  buildTracker();
+  checkWeekCompliance();
+  refreshSavedList();
+  // 3. Show status
+  const bar=document.getElementById('sync-status-bar-text');
+  if(bar){
+    if(localState&&!syncApiKey) bar.textContent='💾 Loaded — tap ☁️ Sync to enable cloud';
+    else if(localState&&syncApiKey&&!syncBinId) bar.textContent='💾 Loaded locally';
+    else if(syncApiKey&&syncBinId) bar.textContent='☁️ Sync on — checking for updates…';
+    else bar.textContent='✨ Fresh start — data saves automatically';
+  }
+  // 4. Cloud pull in background, non-blocking — waits 1.5s so page renders first
+  if(syncApiKey&&syncBinId)setTimeout(pullFromCloud,1500);
+  // Countdown timers
+  const _oct=new Date('2026-10-31');const _apr=new Date('2027-04-15');const _now=new Date();
+  const _octEl=document.getElementById('oct-days');const _aprEl=document.getElementById('apr-days');
+  if(_octEl)_octEl.textContent=Math.max(0,Math.ceil((_oct-_now)/86400000));
+  if(_aprEl)_aprEl.textContent=Math.max(0,Math.ceil((_apr-_now)/86400000));
+});
+</script>
+</body>
+</html>
