@@ -746,7 +746,7 @@ const STAGE_DEFS=[
 ];
 
 // ─── PLAN STATE ───────────────────────────────────────────────────────
-let planState=[];// [{done,label,cat}] flat — indexed by stageIdx, weekIdx, taskIdx
+let planState={};// keyed by 's{si}w{wi}t{ti}' — must be object not array for JSON serialisation
 let planAreaFilter={0:'all',1:'all',2:'all',3:'all'};// area filter per stage
 // stateKey: "s{si}w{wi}t{ti}"
 function planKey(si,wi,ti){return 's'+si+'w'+wi+'t'+ti;}
@@ -1118,7 +1118,16 @@ function buildScheduleFormHTML(type,existing,dateKey,isModal){
   </div>`;
   html+=`<p class="section-divider">Reflection</p>`;
   html+=`<div class="reflect-grid"><div class="reflect-item"><label>What went well?</label><textarea id="ref-well" placeholder="Write here...">${existing&&existing.refWell?existing.refWell.replace(/</g,'&lt;'):''}</textarea></div><div class="reflect-item"><label>What would I change tomorrow?</label><textarea id="ref-change" placeholder="Write here...">${existing&&existing.refChange?existing.refChange.replace(/</g,'&lt;'):''}</textarea></div></div>`;
-  html+=`<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="save-btn" onclick="saveFromForm('${dateKey}','${type}')">Save this day</button>${isModal?`<button class="action-btn" onclick="closeModal()">Cancel</button>`:''}${existing?`<span style="font-size:11px;color:var(--green);align-self:center">Previously saved</span>`:''}</div>`;
+  // Modal gets its own save + cancel buttons; capture tab uses the top bar Save button
+  if(isModal){
+    html+=`<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="save-btn" onclick="saveFromModal('${dateKey}','${type}')">Save this day</button>
+      <button class="action-btn" onclick="closeModal()">Cancel</button>
+      ${existing?'<span style="font-size:11px;color:var(--green);align-self:center">Previously saved — editing</span>':''}
+    </div>`;
+  } else {
+    if(existing){html+=`<div style="margin-top:10px;font-size:11px;color:var(--green)">Previously saved — tap Save day above to update.</div>`;}
+  }
   return html;
 }
 function openScheduleModal(dateKey,dateObj,type){
@@ -1129,27 +1138,57 @@ function openScheduleModal(dateKey,dateObj,type){
 function closeModal(){document.getElementById('schedule-modal').classList.remove('open');}
 function toggleFlag(cb){const k=cb.dataset.k;const row=document.getElementById('flagrow-'+k);if(row){cb.checked?row.classList.add('visible'):row.classList.remove('visible');}}
 document.addEventListener('input',function(e){if(e.target.classList.contains('plan-inp')){const type=e.target.dataset.type;const k=e.target.dataset.k;if(userPlanned[type])userPlanned[type][k]=e.target.value;}});
-function saveFromForm(dateKey,type){
-  const ctx=document.getElementById('modal-body')||document.getElementById('capture-form-area');
+// Core save — ctx is the container element to read form data from
+function saveFromContext(dateKey,type,ctx){
   const slotData={};
   TIME_SLOTS.forEach(s=>{
     const planInp=ctx.querySelector(`.plan-inp[data-k="${s.k}"]`);
     const flagChk=ctx.querySelector(`.flag-chk[data-k="${s.k}"]`);
     const flagNote=ctx.querySelector(`.flag-note[data-k="${s.k}"]`);
-    slotData[s.k]={planned:planInp?planInp.value.trim():'',flagged:flagChk?flagChk.checked:false,note:flagNote?flagNote.value.trim():''};
+    slotData[s.k]={
+      planned:planInp?planInp.value.trim():'',
+      flagged:flagChk?flagChk.checked:false,
+      note:flagNote?flagNote.value.trim():''
+    };
   });
   const mc={};ctx.querySelectorAll('[data-mc]').forEach(cb=>{mc[cb.dataset.mc]=cb.checked;});
   const ec={};ctx.querySelectorAll('[data-ec]').forEach(cb=>{ec[cb.dataset.ec]=cb.checked;});
-  savedLogs[dateKey]={type,slots:slotData,morningChecks:mc,eveningChecks:ec,
-    dayRating:(document.getElementById('day-rating-val')||{}).value||'',
-    sc1:(document.getElementById('ms1')||{}).textContent||'',
-    sc2:(document.getElementById('ms2')||{}).textContent||'',
-    sc3:(document.getElementById('ms3')||{}).textContent||'',
-    refWell:(document.getElementById('ref-well')||{}).value||'',
-    refChange:(document.getElementById('ref-change')||{}).value||'',
-    savedAt:new Date().toISOString()};
-  closeModal();buildTracker();refreshSavedList();checkWeekCompliance();buildMoodCal();buildReflections();
+  // These IDs are unique within each container — scope lookup to ctx
+  const ratingEl=ctx.querySelector('#day-rating-val');
+  const ms1El=ctx.querySelector('#ms1');
+  const ms2El=ctx.querySelector('#ms2');
+  const ms3El=ctx.querySelector('#ms3');
+  const refWellEl=ctx.querySelector('#ref-well');
+  const refChangeEl=ctx.querySelector('#ref-change');
+  savedLogs[dateKey]={
+    type,slots:slotData,morningChecks:mc,eveningChecks:ec,
+    dayRating:ratingEl?ratingEl.value||'':'',
+    sc1:ms1El?ms1El.textContent||'':'',
+    sc2:ms2El?ms2El.textContent||'':'',
+    sc3:ms3El?ms3El.textContent||'':'',
+    refWell:refWellEl?refWellEl.value||'':'',
+    refChange:refChangeEl?refChangeEl.value||'':'',
+    savedAt:new Date().toISOString()
+  };
+  buildTracker();refreshSavedList();checkWeekCompliance();buildMoodCal();buildReflections();
+}
+
+// Save from modal (tracker dot tap)
+function saveFromModal(dateKey,type){
+  const ctx=document.getElementById('modal-body');
+  if(!ctx){console.warn('modal-body not found');return;}
+  saveFromContext(dateKey,type,ctx);
+  closeModal();
   const st=document.getElementById('save-status');if(st){st.textContent='Saved ✓';setTimeout(()=>st.textContent='',2500);}
+}
+
+// Save from daily capture tab top bar button
+function saveFromForm(dateKey,type){
+  const ctx=document.getElementById('capture-form-area');
+  if(!ctx){console.warn('capture-form-area not found');return;}
+  saveFromContext(dateKey,type,ctx);
+  const st=document.getElementById('save-status');
+  if(st){st.textContent='Saved ✓';st.style.color='var(--green)';setTimeout(()=>st.textContent='',2500);}
 }
 function initCapture(){const d=document.getElementById('capture-date');if(d&&!d.value)d.value=todayStr();renderCaptureForm();}
 function renderCaptureForm(){const type=document.getElementById('capture-type').value;const dateKey=document.getElementById('capture-date').value||todayStr();document.getElementById('capture-form-area').innerHTML=buildScheduleFormHTML(type,savedLogs[dateKey],dateKey,false);}
@@ -1173,8 +1212,11 @@ function calcCompliance(keys){
   const msS=mSc.length?Math.round(mSc.reduce((a,b)=>a+b,0)/mSc.length):null;
   const mcSc=keys.map(k=>{const l=savedLogs[k];if(!l||!l.morningChecks)return null;return Math.round(Object.values(l.morningChecks).filter(Boolean).length/4*100);}).filter(v=>v!==null);
   const mcS=mcSc.length?Math.round(mcSc.reduce((a,b)=>a+b,0)/mcSc.length):null;
+  // Evening checks (5 items: ec1-ec5)
+  const ecSc=keys.map(k=>{const l=savedLogs[k];if(!l||!l.eveningChecks)return null;return Math.round(Object.values(l.eveningChecks).filter(Boolean).length/5*100);}).filter(v=>v!==null);
+  const ecS=ecSc.length?Math.round(ecSc.reduce((a,b)=>a+b,0)/ecSc.length):null;
   const op=st>0?Math.round(sm/st*100):0;
-  return{sectionResults:sr,overallPct:op,ratingScore:rS,mindScore:msS,mcScore:mcS,schMatch:sm,schTotal:st,days:keys.length};
+  return{sectionResults:sr,overallPct:op,ratingScore:rS,mindScore:msS,mcScore:mcS,ecScore:ecS,schMatch:sm,schTotal:st,days:keys.length};
 }
 function checkWeekCompliance(){
   const keys=getWeekKeys();const ov=document.getElementById('week-compliance-ov');
@@ -1190,14 +1232,14 @@ function buildCompliance(period){
   else if(period==='month'){const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');keys=keys.filter(k=>k.startsWith(ym));}
   const out=document.getElementById('compliance-output');
   if(!keys.length){out.innerHTML='<div class="empty-state"><p>No saved days in this period.</p></div>';return;}
-  const{sectionResults,overallPct,ratingScore,mindScore,mcScore,schMatch,schTotal,days}=calcCompliance(keys);
+  const{sectionResults,overallPct,ratingScore,mindScore,mcScore,ecScore,schMatch,schTotal,days}=calcCompliance(keys);
   const pl=period==='all'?'All time':period==='month'?'This month':'This week';
   const oP=overallPct>=70?'good':overallPct>=50?'mid':'low';const oB=overallPct>=70?'comp-good':overallPct>=50?'comp-mid':'comp-low';
   let html=`<div style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><span style="font-size:13px;font-weight:500">${pl} — ${days} day${days>1?'s':''}</span><span class="comp-pct ${oP}">${overallPct}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${oB}" style="width:${overallPct}%"></div></div><p style="font-size:11px;color:var(--text3);margin-top:4px">${schMatch}/${schTotal} slots on plan</p></div>`;
   html+=`<p style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Schedule sections</p>`;
   sectionResults.forEach(r=>{if(r.pct===null)return;const pc=r.pct>=70?'good':r.pct>=50?'mid':'low';const bc=r.pct>=70?'comp-good':r.pct>=50?'comp-mid':'comp-low';html+=`<div class="comp-section"><div class="comp-section-title"><span>${r.label}</span><span class="comp-pct ${pc}">${r.pct}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${bc}" style="width:${r.pct}%"></div></div><p style="font-size:10px;color:var(--text3);margin-top:2px">${r.match}/${r.total} on plan</p></div>`;});
   html+=`<p style="font-size:12px;font-weight:500;color:var(--text2);margin:14px 0 8px">Day quality</p>`;
-  [{label:'Day rating',val:ratingScore,desc:'Good=100, Mixed=50, Hard=0'},{label:'Mindset',val:mindScore,desc:'Avg % Yes answers'},{label:'Morning check-ins',val:mcScore,desc:'Avg % completed'}].forEach(item=>{if(item.val===null)return;const pc=item.val>=70?'good':item.val>=50?'mid':'low';const bc=item.val>=70?'comp-good':item.val>=50?'comp-mid':'comp-low';html+=`<div class="comp-section"><div class="comp-section-title"><span>${item.label}</span><span class="comp-pct ${pc}">${item.val}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${bc}" style="width:${item.val}%"></div></div><p style="font-size:10px;color:var(--text3);margin-top:2px">${item.desc}</p></div>`;});
+  [{label:'Day rating',val:ratingScore,desc:'Good=100, Mixed=50, Hard=0'},{label:'Mindset scoreboard',val:mindScore,desc:'Avg % of Yes answers'},{label:'Morning check-ins',val:mcScore,desc:'Avg % of 4 checks completed'},{label:'Evening check-ins',val:ecScore,desc:'Avg % of 5 checks completed'}].forEach(item=>{if(item.val===null)return;const pc=item.val>=70?'good':item.val>=50?'mid':'low';const bc=item.val>=70?'comp-good':item.val>=50?'comp-mid':'comp-low';html+=`<div class="comp-section"><div class="comp-section-title"><span>${item.label}</span><span class="comp-pct ${pc}">${item.val}%</span></div><div class="comp-bar-wrap"><div class="comp-bar ${bc}" style="width:${item.val}%"></div></div><p style="font-size:10px;color:var(--text3);margin-top:2px">${item.desc}</p></div>`;});
   const working=sectionResults.filter(r=>r.pct!==null&&r.pct>=70);const struggling=sectionResults.filter(r=>r.pct!==null&&r.pct<50);
   if(working.length||struggling.length){html+=`<div style="margin-top:14px;padding:12px;background:var(--bg2);border-radius:var(--radius)"><p style="font-size:12px;font-weight:500;margin-bottom:8px">Insights</p>`;if(working.length){html+=`<p style="font-size:11px;font-weight:500;color:var(--green-text);margin-bottom:4px">Working well</p>`;working.forEach(r=>{html+=`<div class="insight"><div class="insight-dot" style="background:var(--green)"></div>${r.label} — ${r.pct}%</div>`;});}if(struggling.length){html+=`<p style="font-size:11px;font-weight:500;color:var(--red-text);margin:8px 0 4px">Needs attention</p>`;struggling.forEach(r=>{html+=`<div class="insight"><div class="insight-dot" style="background:var(--red)"></div>${r.label} — ${r.pct}%</div>`;});}html+=`</div>`;}
   if(overallPct<60)html+=`<div style="margin-top:12px;padding:12px;background:var(--red-bg);border:1px solid var(--red);border-radius:var(--radius);font-size:13px;color:var(--red-text)">⚠️ Below 60% — open Emergency tab.</div>`;
@@ -1265,8 +1307,25 @@ function goPlanStage(si,el){
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────
-function selRating(el,val){document.querySelectorAll('.day-r-btn').forEach(b=>{b.classList.remove('sel-green','sel-amber','sel-red');});el.classList.add(val==='good'?'sel-green':val==='mixed'?'sel-amber':'sel-red');const hid=document.getElementById('day-rating-val');if(hid)hid.value=val;}
-function setMS(id,val){const el=document.getElementById(id);if(el)el.textContent=val;}
+function selRating(el,val){
+  // Walk up from the button to find the actual form container
+  const container=el.closest('#modal-body')||el.closest('#capture-form-area');
+  if(!container)return;
+  container.querySelectorAll('.day-r-btn').forEach(b=>{b.classList.remove('sel-green','sel-amber','sel-red');});
+  el.classList.add(val==='good'?'sel-green':val==='mixed'?'sel-amber':'sel-red');
+  const hid=container.querySelector('#day-rating-val');if(hid)hid.value=val;
+}
+function setMS(id,val){
+  // Use whichever container is currently visible
+  const modalOverlay=document.getElementById('schedule-modal');
+  const modalOpen=modalOverlay&&modalOverlay.classList.contains('open');
+  const ctx=modalOpen
+    ? document.getElementById('modal-body')
+    : document.getElementById('capture-form-area');
+  if(!ctx)return;
+  const el=ctx.querySelector('#'+id);
+  if(el)el.textContent=val;
+}
 function togQ(li){li.classList.toggle('done');li.querySelector('svg').style.display=li.classList.contains('done')?'block':'none';}
 function resetList(id){document.querySelectorAll('#'+id+' .q-item').forEach(li=>{li.classList.remove('done');li.querySelector('svg').style.display='none';});}
 function updateWeekStartLabel(){const mon=getWeekMon(new Date());const label=mon.toLocaleDateString('en-US',{month:'short',day:'numeric'});const el=document.getElementById('week-start-label');if(el)el.textContent=label;}
@@ -1317,8 +1376,15 @@ function getAppState(){
 function applyAppState(state){
   if(!state)return;
   if(state.savedLogs)Object.assign(savedLogs,state.savedLogs);
-  if(state.planState)Object.assign(planState,state.planState);
-  if(state.planTaskLabels)Object.assign(planTaskLabels,state.planTaskLabels);
+  if(state.planState){
+    // Clear current then apply — prevents stale checked state lingering
+    Object.keys(planState).forEach(k=>delete planState[k]);
+    Object.assign(planState,state.planState);
+  }
+  if(state.planTaskLabels){
+    Object.keys(planTaskLabels).forEach(k=>delete planTaskLabels[k]);
+    Object.assign(planTaskLabels,state.planTaskLabels);
+  }
   if(state.userPlanned)['office','wfh','holiday'].forEach(t=>{if(state.userPlanned[t])Object.assign(userPlanned[t],state.userPlanned[t]);});
   if(state.dotState)Object.assign(dotState,state.dotState);
   if(state.holidays)Object.assign(holidays,state.holidays);
@@ -1329,7 +1395,8 @@ function applyAppState(state){
     if(!STAGE_DEFS[si])return;
     st.forEach((wt,wi)=>{
       if(!STAGE_DEFS[si].weeks[wi])return;
-      STAGE_DEFS[si].weeks[wi].tasks=wt.map(t=>({t:t.t,cat:t.cat,done:false}));
+      // Replace entire task list so add/delete syncs correctly
+      STAGE_DEFS[si].weeks[wi].tasks=wt.map(t=>({t:t.t,cat:t.cat||'gen',done:false}));
     });
   });
 }
@@ -1559,6 +1626,8 @@ function resetSyncPassphrase(){
 // ─── PATCH SAVE POINTS ───────────────────────────────────────────────
 const _origSaveFromForm=saveFromForm;
 saveFromForm=function(dateKey,type){_origSaveFromForm(dateKey,type);setTimeout(autoSave,100);};
+const _origSaveFromModal=saveFromModal;
+saveFromModal=function(dateKey,type){_origSaveFromModal(dateKey,type);setTimeout(autoSave,100);};
 const _origTogglePlanTask=togglePlanTask;
 togglePlanTask=function(si,wi,ti,cb){_origTogglePlanTask(si,wi,ti,cb);setTimeout(autoSave,100);};
 const _origDeletePlanTask=deletePlanTask;
